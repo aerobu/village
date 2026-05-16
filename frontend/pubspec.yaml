@@ -37,9 +37,6 @@ dev_dependencies:
   flutter_lints: ^4.0.0
   fake_cloud_firestore: ^3.0.0
 
-  # Mock Firestore for TDD #3 integration testing
-  fake_cloud_firestore: ^3.0.0
-
 flutter:
   uses-material-design: true
   assets:
