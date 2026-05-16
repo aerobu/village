@@ -180,25 +180,33 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
       }
       final elderId = currentUser.uid;
 
-      // Step 2: Capture current location
-      final permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        final requested = await Geolocator.requestPermission();
-        if (requested != LocationPermission.whileInUse &&
-            requested != LocationPermission.always) {
-          throw Exception('Location permission denied');
+      // Step 2: Capture current location.
+      // In DEMO_MODE we use the seeded elder's location to skip the browser
+      // permission prompt entirely — Geolocator.getCurrentPosition() hangs
+      // on Chrome web if the permission dialog is dismissed or blocked.
+      double rawLat;
+      double rawLng;
+      if (kDemoMode) {
+        rawLat = DemoSeed.elder.latitude;
+        rawLng = DemoSeed.elder.longitude;
+      } else {
+        final permission = await Geolocator.checkPermission();
+        if (permission == LocationPermission.denied) {
+          final requested = await Geolocator.requestPermission();
+          if (requested != LocationPermission.whileInUse &&
+              requested != LocationPermission.always) {
+            throw Exception('Location permission denied');
+          }
         }
+        final position = await Geolocator.getCurrentPosition(
+          timeLimit: const Duration(seconds: 10),
+        );
+        rawLat = position.latitude;
+        rawLng = position.longitude;
       }
 
-      final position = await Geolocator.getCurrentPosition(
-        timeLimit: const Duration(seconds: 10),
-      );
-
       // Step 3: Truncate coordinates to 2 dp for privacy (TDD #2)
-      final (:lat, :lng) = PrivacyUtils.truncateLocation(
-        position.latitude,
-        position.longitude,
-      );
+      final (:lat, :lng) = PrivacyUtils.truncateLocation(rawLat, rawLng);
 
       // Step 4: Create and save request to Firestore (TDD #3)
       final now = DateTime.now().millisecondsSinceEpoch;
