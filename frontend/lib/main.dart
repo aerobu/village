@@ -5,6 +5,7 @@ import 'firebase_options.dart';
 
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
+import 'screens/request_form.dart';
 
 /// When `DEMO_MODE=true` (default), the app runs entirely off `DemoSeed`
 /// in-memory data and never reads from Firestore. This keeps us comfortably
@@ -48,8 +49,8 @@ class VillageApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (_) => const MapScreen(),
-        // Owned by B — stub so routes compile
-        '/request': (_) => const _PlaceholderScreen(label: 'Request Form'),
+        // Owned by B — request form
+        '/request': (_) => const RequestFormScreen(),
         // Owned by C — stub so routes compile
         '/profile': (_) => const _PlaceholderScreen(label: 'Profile'),
       },

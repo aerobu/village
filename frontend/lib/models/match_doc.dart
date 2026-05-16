@@ -1,32 +1,54 @@
-/// A confirmed match stored in `matches/{matchId}`.
-/// Only the two participants can read this doc (enforced by Firestore rules).
-///
-/// Owner: B
+/// Output of the Gale-Shapley matching algorithm.
+/// Represents a pairing of a volunteer with a help request.
 class MatchDoc {
-  const MatchDoc({
-    required this.matchId,
+  final String id;
+  final String volunteerId;
+  final String requestId;
+  
+  /// Match quality score (0.0–1.0).
+  /// Calculated by matching_service.ts based on language, distance, urgency, etc.
+  /// Higher = better match.
+  final double score;
+  
+  /// Human-readable explanation: "Spanish speaker, 200m away"
+  final String reason;
+  
+  /// Unix timestamp (ms) when match was created by the algorithm.
+  final int createdMs;
+  
+  /// True if the volunteer has accepted this match.
+  /// Once accepted, the app shows a fake 5-second timer ("accepting...") per OWNERSHIP.md.
+  final bool isAccepted;
+
+  MatchDoc({
+    required this.id,
+    required this.volunteerId,
     required this.requestId,
-    required this.elderUid,
-    required this.volunteerUid,
-    this.acceptedAt,
-    this.completedAt,
-    this.proofPhotoUrl,
+    required this.score,
+    required this.reason,
+    required this.createdMs,
+    this.isAccepted = false,
   });
 
-  final String matchId;
-  final String requestId;
-  final String elderUid;
-  final String volunteerUid;
-  final DateTime? acceptedAt;   // hardcoded 3-second fake-accept timer
-  final DateTime? completedAt;
-  final String? proofPhotoUrl;  // hardcoded stock photo URL for demo
+  /// Serialize to Firestore.
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'volunteerId': volunteerId,
+        'requestId': requestId,
+        'score': score,
+        'reason': reason,
+        'createdMs': createdMs,
+        'isAccepted': isAccepted,
+      };
 
-  // TODO(B): implement fromMap / toMap
-  factory MatchDoc.fromMap(Map<String, dynamic> map) {
-    throw UnimplementedError('MatchDoc.fromMap — implement in B\'s models pass');
-  }
-
-  Map<String, dynamic> toMap() {
-    throw UnimplementedError('MatchDoc.toMap — implement in B\'s models pass');
-  }
+  /// Deserialize from Firestore.
+  factory MatchDoc.fromJson(Map<String, dynamic> json) => MatchDoc(
+        id: json['id'] as String,
+        volunteerId: json['volunteerId'] as String,
+        requestId: json['requestId'] as String,
+        score: (json['score'] as num).toDouble(),
+        reason: json['reason'] as String,
+        createdMs: json['createdMs'] as int,
+        isAccepted: json['isAccepted'] as bool? ?? false,
+      );
 }
