@@ -11,23 +11,24 @@ class ProfileScreen extends StatelessWidget {
 
   const ProfileScreen({super.key, required this.user});
 
-  static const _langLabels = {
-    'ta': 'Tamil',
-    'hi': 'Hindi',
-    'en': 'English',
-    'bn': 'Bengali',
+  static const Map<String, String> _langLabels = {
+    'tamil': 'Tamil',
+    'hindi': 'Hindi',
+    'english': 'English',
+    'bengali': 'Bengali',
+    'tagalog': 'Tagalog',
+    'spanish': 'Spanish',
   };
 
-  static const _skillLabels = {
-    'groceries': '🛒 Groceries',
+  static const Map<String, String> _skillLabels = {
+    'grocery-shopping': '🛒 Groceries',
     'companionship': '❤️ Companionship',
-    'transport': '🚗 Transport',
-    'medical': '💊 Medical',
+    'transportation': '🚗 Transport',
+    'tech-help': '💻 Tech Help',
   };
 
   @override
   Widget build(BuildContext context) {
-    final isVol = user.role == 'volunteer';
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
       appBar: AppBar(
@@ -63,90 +64,69 @@ class ProfileScreen extends StatelessWidget {
               child: CircleAvatar(
                 radius: 50,
                 backgroundColor: Theme.of(context).colorScheme.surface,
-                child: user.photoUrl != null
-                    ? ClipOval(
-                        child: CachedNetworkImage(
-                          imageUrl: user.photoUrl!,
-                          width: 100,
-                          height: 100,
-                          fit: BoxFit.cover,
-                        ),
-                      )
-                    : Text(
-                        user.displayName.isNotEmpty ? user.displayName[0] : '?',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ),
+                child: ClipOval(
+                  child: CachedNetworkImage(
+                    imageUrl: user.photoUrl,
+                    width: 100,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                    errorWidget: (_, __, ___) => Text(
+                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 16),
-            Text(user.displayName, style: Theme.of(context).textTheme.headlineMedium),
+            Text(user.name, style: Theme.of(context).textTheme.headlineMedium),
             const SizedBox(height: 8),
             // Role chip
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
               decoration: BoxDecoration(
-                color: isVol
-                    ? Theme.of(context).colorScheme.primary.withOpacity(0.2)
-                    : const Color(0xFF4CAF50).withOpacity(0.2),
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                isVol ? '🤝 Volunteer' : '🏡 Community Member',
+                '🤝 Volunteer',
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: isVol
-                      ? Theme.of(context).colorScheme.primary
-                      : const Color(0xFF4CAF50),
+                  color: Theme.of(context).colorScheme.primary,
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            // Background check (volunteers only)
-            if (isVol && user.backgroundCheck)
+            // Background check badge (Person C owns this)
+            if (user.backgroundCheckVerified)
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: const BackgroundCheckBadge(),
               ),
             const SizedBox(height: 24),
-            // Rating
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ...List.generate(
-                  5,
-                  (i) => Icon(
-                    i < user.rating.floor() ? Icons.star_rounded : Icons.star_outline_rounded,
-                    color: const Color(0xFFFFB347),
-                    size: 22,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '${user.rating.toStringAsFixed(1)}/5.0',
-                  style: Theme.of(context).textTheme.bodyMedium,
-                ),
-              ],
+            // Language
+            _buildSection(
+              context,
+              '🌐 Language',
+              [_langLabels[user.language] ?? user.language],
             ),
-            const SizedBox(height: 32),
-            // Languages
-            _buildSection(context, '🌐 Languages', [
-              ...user.languages.map((l) => _langLabels[l] ?? l.toUpperCase()).toList()
-            ]),
             const SizedBox(height: 20),
-            // Skills/Needs
-            if (isVol && user.skills.isNotEmpty)
-              _buildSection(context, '✨ Skills', [
-                ...user.skills.map((s) => _skillLabels[s] ?? s).toList()
-              ])
-            else if (!isVol && user.needs.isNotEmpty)
-              _buildSection(context, '💝 Needs Help With', [
-                ...user.needs.map((n) => _skillLabels[n] ?? n).toList()
-              ]),
+            // Skills
+            if (user.skills.isNotEmpty)
+              _buildSection(
+                context,
+                '✨ Skills',
+                user.skills
+                    .split(',')
+                    .map((s) => s.trim())
+                    .map((s) => _skillLabels[s] ?? s)
+                    .toList(),
+              ),
             const SizedBox(height: 24),
             // Location (masked)
             Padding(
@@ -162,12 +142,18 @@ class ProfileScreen extends StatelessWidget {
                   children: [
                     const Text('📍 Approximate Location'),
                     const SizedBox(height: 8),
-                    const Text('~0.3 km away (masked for privacy)',
-                        style: TextStyle(fontSize: 12, color: Colors.grey)),
+                    const Text(
+                      '~0.3 km away (masked for privacy)',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
                     const SizedBox(height: 8),
                     Text(
                       'Exact address shared after match accepted',
-                      style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontStyle: FontStyle.italic),
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                        fontStyle: FontStyle.italic,
+                      ),
                     ),
                   ],
                 ),
@@ -178,7 +164,10 @@ class ProfileScreen extends StatelessWidget {
             TextButton.icon(
               onPressed: () => _showReportDialog(context),
               icon: const Icon(Icons.flag_outlined, size: 16, color: Color(0xFFCF6679)),
-              label: const Text('Report User', style: TextStyle(color: Color(0xFFCF6679))),
+              label: const Text(
+                'Report User',
+                style: TextStyle(color: Color(0xFFCF6679)),
+              ),
             ),
             const SizedBox(height: 40),
           ],
@@ -199,14 +188,16 @@ class ProfileScreen extends StatelessWidget {
             spacing: 8,
             runSpacing: 8,
             children: items
-                .map((item) => Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(item, style: const TextStyle(fontSize: 13)),
-                    ))
+                .map(
+                  (item) => Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: Text(item, style: const TextStyle(fontSize: 13)),
+                  ),
+                )
                 .toList(),
           ),
         ],
@@ -221,12 +212,16 @@ class ProfileScreen extends StatelessWidget {
         title: const Text('Report User'),
         content: const Text('Our safety team will review this within 24 hours.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
           TextButton(
             onPressed: () {
               Navigator.pop(ctx);
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(const SnackBar(content: Text('Report submitted')));
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Report submitted')),
+              );
             },
             child: const Text('Report', style: TextStyle(color: Color(0xFFCF6679))),
           ),

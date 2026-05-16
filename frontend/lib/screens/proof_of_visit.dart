@@ -22,8 +22,7 @@ class ProofOfVisitScreen extends StatefulWidget {
   State<ProofOfVisitScreen> createState() => _ProofOfVisitScreenState();
 }
 
-class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
-    with TickerProviderStateMixin {
+class _ProofOfVisitScreenState extends State<ProofOfVisitScreen> with TickerProviderStateMixin {
   late AnimationController _checkCtrl, _cardCtrl;
   late Animation<double> _checkScale, _cardSlide, _cardFade;
 
@@ -32,7 +31,7 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
     super.initState();
     _checkCtrl = AnimationController(vsync: this, duration: const Duration(ms: 600));
     _cardCtrl = AnimationController(vsync: this, duration: const Duration(ms: 500));
-    
+
     _checkScale = CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut);
     _cardSlide = Tween<double>(begin: 60, end: 0)
         .animate(CurvedAnimation(parent: _cardCtrl, curve: Curves.easeOutCubic));
@@ -50,7 +49,7 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Use local asset (proof_stub.jpg added by Person A) for better offline reliability
+    // Use local asset for better offline reliability
     final photoUrl = widget.match.proofPhotoUrl ?? 'assets/images/proof_stub.jpg';
 
     return Scaffold(
@@ -93,10 +92,13 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
               ),
             ),
             const SizedBox(height: 20),
-            const Text('Visit Complete! 🎉', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800)),
+            const Text(
+              'Visit Complete! 🎉',
+              style: TextStyle(fontSize: 28, fontWeight: FontWeight.w800),
+            ),
             const SizedBox(height: 8),
             Text(
-              '${widget.volunteer.displayName} helped ${widget.elder.displayName}',
+              '${widget.volunteer.name} helped ${widget.elder.name}',
               style: const TextStyle(fontSize: 15),
               textAlign: TextAlign.center,
             ),
@@ -130,34 +132,25 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.4), blurRadius: 24, offset: const Offset(0, 8))
+          BoxShadow(
+            color: Colors.black.withOpacity(0.4),
+            blurRadius: 24,
+            offset: const Offset(0, 8),
+          )
         ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            // Load local asset (proof_stub.jpg) or network image
+            // Load local asset or network image
             url.startsWith('assets/')
                 ? Image.asset(
                     url,
                     width: double.infinity,
                     height: 280,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => Container(
-                      height: 280,
-                      color: Theme.of(context).colorScheme.surface,
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
-                            SizedBox(height: 8),
-                            Text('Photo not available'),
-                          ],
-                        ),
-                      ),
-                    ),
+                    errorBuilder: (_, __, ___) => _errorPlaceholder(context),
                   )
                 : CachedNetworkImage(
                     imageUrl: url,
@@ -169,20 +162,7 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
                       color: Theme.of(context).colorScheme.surface,
                       child: const Center(child: CircularProgressIndicator()),
                     ),
-                    errorWidget: (_, __, ___) => Container(
-                      height: 280,
-                      color: Theme.of(context).colorScheme.surface,
-                      child: const Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
-                            SizedBox(height: 8),
-                            Text('Photo not available'),
-                          ],
-                        ),
-                      ),
-                    ),
+                    errorWidget: (_, __, ___) => _errorPlaceholder(context),
                   ),
             Positioned(
               bottom: 0,
@@ -203,12 +183,33 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
                     SizedBox(width: 8),
                     Text(
                       'Verified community visit',
-                      style: TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _errorPlaceholder(BuildContext context) {
+    return Container(
+      height: 280,
+      color: Theme.of(context).colorScheme.surface,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
+            SizedBox(height: 8),
+            Text('Photo not available'),
           ],
         ),
       ),
@@ -242,7 +243,11 @@ class _ShareBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
 
-  const _ShareBtn({required this.label, required this.icon, required this.onTap});
+  const _ShareBtn({
+    required this.label,
+    required this.icon,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -257,7 +262,11 @@ class _ShareBtn extends StatelessWidget {
         child: Center(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
-            children: [Icon(icon, size: 20), const SizedBox(width: 8), Text(label)],
+            children: [
+              Icon(icon, size: 20),
+              const SizedBox(width: 8),
+              Text(label),
+            ],
           ),
         ),
       ),
