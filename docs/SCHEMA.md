@@ -2,153 +2,124 @@
 
 Source of truth for the data model. Agree on this **before** parallelizing feature work — every screen and the matching function depend on it.
 
-The privacy invariants from `CLAUDE.md` are encoded directly into the collection split: PII lives in a restricted collection, public profiles only carry generalized fields, and pre-match coordinates are truncated to 2 decimal places (~1 km).
-
 ## Collections
 
-### `users_public/{uid}`
-Readable by any authenticated user. Safe to display on the map / in match cards.
+### `users/{id}`
+Public volunteer and elder profiles. Readable by any authenticated user. Safe to display on the map / in match cards.
 
 | Field            | Type      | Notes                                                                |
 |------------------|-----------|----------------------------------------------------------------------|
-| `uid`            | string    | Firebase Auth UID                                                    |
-| `role`           | string    | `"elder"` \| `"volunteer"`                                            |
-| `displayName`    | string    | First name + last initial only ("Priya S.")                          |
-| `photoUrl`       | string?   | Generic avatar URL OR null                                           |
-| `languages`      | string[]  | ISO-ish tags: `["ta","en"]` (Tamil, English)                          |
-| `approxLocation` | geopoint  | **Coordinates truncated to 2 decimal places.** ~1km granularity.     |
-| `rating`         | number    | 0.0 – 5.0, hardcoded for demo                                        |
-| `backgroundCheck`| boolean   | `true` for demo volunteers (the "badge"). Always `false` for elders. |
-| `skills`         | string[]  | Volunteer-only: `["groceries","companionship","transport"]`           |
-| `needs`          | string[]  | Elder-only: same vocabulary as `skills`                              |
+| `id`             | string    | document id (typically Firebase Auth UID)                            |
+| `name`           | string    | First name + last initial only ("Priya S.")                          |
+| `photoUrl`       | string    | Generic avatar URL or empty string                                   |
+| `language`       | string    | Single language tag: `"tamil"`, `"spanish"`, `"english"`, etc.        |
+| `latitude`       | number    | **Truncated to 2 decimal places.** ~1.1 km precision (privacy).      |
+| `longitude`      | number    | **Truncated to 2 decimal places.**                                   |
+| `skills`         | string    | Comma-separated for volunteers: `"groceries,companionship,transport"` |
+| `lastSeenMs`     | number    | Unix ms; used to filter active volunteers (last 24 hours)            |
+| `backgroundCheckVerified` | boolean | `true` = verified badge shown for volunteers                  |
 
-### `users_pii/{uid}`
-**Locked down by security rules.** Only the user themselves can read; only the matching Cloud Function can read across users (via Admin SDK). Never queried from the client for other users.
+**Note on role:** The demo doesn't have a `role` field — elder vs. volunteer distinction is contextual (seeded separately in `demo_seed.dart`, or inferred from who created the request).
 
-| Field         | Type     | Notes                                  |
-|---------------|----------|----------------------------------------|
-| `uid`         | string   | mirrors `users_public.uid`             |
-| `fullName`    | string   |                                        |
-| `phone`       | string   |                                        |
-| `exactLocation`| geopoint| Full precision. Revealed to a matched counterparty only after acceptance. |
-| `email`       | string   |                                        |
-| `address`     | string?  |                                        |
-
-### `requests/{requestId}`
-Created when an elder hits "Find Match". Writing here is what triggers the Cloud Function (TDD test #3).
+### `requests/{id}`
+Created when an elder hits "Find Match". Writing here can trigger the Cloud Function. **TDD #3: submitting a request writes to this collection.**
 
 | Field           | Type      | Notes                                           |
 |-----------------|-----------|-------------------------------------------------|
-| `requestId`     | string    | document id                                     |
-| `elderUid`      | string    | references `users_public/{uid}`                 |
-| `needType`      | string    | `"groceries"`, `"companionship"`, etc.          |
-| `requiredLanguage` | string | ISO-ish tag, e.g. `"ta"`                         |
-| `approxLocation`| geopoint  | truncated to 2 decimals (privacy invariant)     |
-| `status`        | string    | `"pending"` → `"matched"` → `"completed"`        |
-| `createdAt`     | timestamp | `serverTimestamp()`                              |
-| `matchId`       | string?   | filled in when matched                           |
+| `id`            | string    | document id                                     |
+| `elderId`       | string    | Firebase Auth UID of the elder requesting help |
+| `type`          | string    | `"grocery"`, `"transportation"`, `"tech-help"`, `"companionship"`, etc. |
+| `language`      | string    | Preferred language: `"tamil"`, `"spanish"`, `"english"`, etc.       |
+| `latitude`      | number    | **Truncated to 2 decimals** (privacy invariant)                      |
+| `longitude`     | number    | **Truncated to 2 decimals**                                         |
+| `urgency`       | number    | Integer 1–5 (5 = ASAP). Used in matching score.                     |
+| `description`   | string    | Free-text task description from the elder                           |
+| `createdMs`     | number    | Unix ms when request was submitted                                  |
+| `expiresMs`     | number?   | Unix ms when request expires if not matched (optional)              |
+| `isAccepted`    | boolean   | `true` once a volunteer accepts the match                           |
+| `isCompleted`   | boolean   | `true` once the task is marked complete                             |
 
-### `matches/{matchId}`
-Result of the Gale-Shapley pass. Only the two participants can read the corresponding match doc.
+### `matches/{id}`
+Output of the Gale-Shapley matching algorithm. Represents a proposed pairing of a volunteer with a request.
 
 | Field          | Type      | Notes                                           |
 |----------------|-----------|-------------------------------------------------|
-| `matchId`      | string    |                                                 |
-| `requestId`    | string    |                                                 |
-| `elderUid`     | string    |                                                 |
-| `volunteerUid` | string    |                                                 |
-| `acceptedAt`   | timestamp | for the hardcoded 3-second fake-accept timer    |
-| `completedAt`  | timestamp?| set when "Complete Visit" is tapped             |
-| `proofPhotoUrl`| string?   | hardcoded stock photo URL for the demo          |
+| `id`           | string    | document id: `"{volunteerId}-{requestId}"`     |
+| `volunteerId`  | string    | Firebase Auth UID of the volunteer             |
+| `requestId`    | string    | references `requests/{id}`                      |
+| `score`        | number    | 0.0–1.0 match quality. Formula: `0.7*language + 0.2*distance + 0.1*urgency` |
+| `reason`       | string    | Human-readable: `"Tamil speaker, 300m away"`   |
+| `createdMs`    | number    | Unix ms when the matching algorithm ran        |
+| `isAccepted`   | boolean   | `true` once volunteer taps Accept              |
 
-## Dart model stubs
+## Privacy invariants
 
-These should land in `frontend/lib/models/` as soon as the scaffold is in. **Person B owns these** (see `OWNERSHIP.md`) and they block the other two — write them first.
+**TDD #2: Coordinate truncation.** All lat/lng exposed to the frontend before match acceptance are truncated to 2 decimal places (~1.1 km precision). See `frontend/lib/utils/privacy_utils.dart`.
+
+**Demo simplification:** The original design included a `users_pii` collection for exact locations (revealed only post-match). For this demo, we use the simplified single-collection approach with truncated coordinates exposed throughout.
+
+## Dart models
+
+These live in `frontend/lib/models/`. **Person B owns these** (see `OWNERSHIP.md`).
 
 ```dart
 // models/user_public.dart
 class UserPublic {
-  final String uid;
-  final String role;              // "elder" | "volunteer"
-  final String displayName;
-  final List<String> languages;
-  final GeoPoint approxLocation;  // truncated
-  final double rating;
-  final bool backgroundCheck;
-  final List<String> skills;
-  final List<String> needs;
-  // fromMap / toMap …
+  final String id;
+  final String name;
+  final String photoUrl;
+  final String language;         // single tag, not array
+  final double latitude;          // truncated to 2 dp
+  final double longitude;         // truncated to 2 dp
+  final String skills;            // comma-separated string
+  final int lastSeenMs;
+  final bool backgroundCheckVerified;
+  
+  double distanceTo(double lat, double lng) { /* Haversine formula */ }
+  Map<String, dynamic> toJson() { /* … */ }
+  factory UserPublic.fromJson(Map<String, dynamic> json) { /* … */ }
 }
 
-// models/request.dart
+// models/help_request.dart
 class HelpRequest {
-  final String requestId;
-  final String elderUid;
-  final String needType;
-  final String requiredLanguage;
-  final GeoPoint approxLocation;
-  final String status;            // "pending" | "matched" | "completed"
-  // …
+  final String id;
+  final String elderId;
+  final String type;              // "grocery", "transport", etc.
+  final String language;          // single tag
+  final double latitude;          // truncated to 2 dp
+  final double longitude;
+  final int urgency;              // 1–5
+  final String description;
+  final int createdMs;
+  final int? expiresMs;
+  final bool isAccepted;
+  final bool isCompleted;
+  
+  Map<String, dynamic> toJson() { /* … */ }
+  factory HelpRequest.fromJson(Map<String, dynamic> json) { /* … */ }
 }
 
-// models/match.dart
+// models/match_doc.dart
 class MatchDoc {
-  final String matchId;
+  final String id;
+  final String volunteerId;
   final String requestId;
-  final String elderUid;
-  final String volunteerUid;
-  final DateTime? acceptedAt;
-  final String? proofPhotoUrl;
-  // …
+  final double score;             // 0.0–1.0
+  final String reason;
+  final int createdMs;
+  final bool isAccepted;
+  
+  Map<String, dynamic> toJson() { /* … */ }
+  factory MatchDoc.fromJson(Map<String, dynamic> json) { /* … */ }
 }
 ```
-
-## Security rules sketch
-
-Real rules go in `firestore.rules`. Minimum for the demo:
-
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{db}/documents {
-
-    // Anyone signed in can read public profiles.
-    match /users_public/{uid} {
-      allow read: if request.auth != null;
-      allow write: if request.auth.uid == uid;
-    }
-
-    // PII: only the user themselves. Cloud Functions use Admin SDK and bypass rules.
-    match /users_pii/{uid} {
-      allow read, write: if request.auth.uid == uid;
-    }
-
-    // Requests: elder writes their own; everyone reads pending requests (for the map).
-    match /requests/{requestId} {
-      allow read: if request.auth != null;
-      allow create: if request.auth.uid == request.resource.data.elderUid
-                    && request.resource.data.approxLocation == roundTo2Dp(request.resource.data.approxLocation);
-      allow update: if request.auth != null; // tighten later
-    }
-
-    // Matches: only the two participants.
-    match /matches/{matchId} {
-      allow read: if request.auth.uid == resource.data.elderUid
-                  || request.auth.uid == resource.data.volunteerUid;
-      allow write: if false; // Cloud Function only
-    }
-  }
-}
-```
-
-`roundTo2Dp` isn't a real rules built-in — we enforce truncation in the client write path and assert it in TDD test #2 instead.
 
 ## Hardcoded demo data
 
 Lives in `frontend/lib/data/demo_seed.dart` (Person A owns this file):
 
-- **5–6 volunteer `users_public` docs** with varied languages (Tamil, Hindi, Bengali, English) and approx locations spread around a small radius.
-- **1 elder `users_public` doc** for the demo user.
-- **1 stock "proof of visit" photo URL** in `assets/` for the post-match screen.
+- **5 volunteer `users` docs** with varied languages (Tamil, Hindi, Bengali, English) and approx locations around downtown Portland, OR.
+- **1 elder `users` doc** for the demo user.
+- **1 stock "proof of visit" photo** (`assets/images/proof_stub.jpg`) for the post-match screen.
 
-Seeding runs on app startup if a `--dart-define=DEMO_SEED=true` flag is passed.
+Seeding runs on app startup when `DEMO_MODE=true` (default). With `DEMO_MODE=false`, the app reads live from Firestore.

@@ -4,6 +4,11 @@
 # Local Claude Code settings (user-specific)
 .claude/settings.local.json
 
+# Claude Code agent working notes — not for version control
+.claude/B-*.md
+.claude/CODE_REVIEW.md
+.claude/activate-village.sh
+
 # Editor swap/backup files
 *.swp
 *.swo
