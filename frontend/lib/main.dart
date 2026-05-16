@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/request_form.dart';
+import 'screens/match_detail_screen.dart';
 
 /// When `DEMO_MODE=true` (default), the app runs entirely off `DemoSeed`
 /// in-memory data and never reads from Firestore. This keeps us comfortably
@@ -67,6 +68,17 @@ class VillageApp extends StatelessWidget {
         '/request': (_) => const RequestFormScreen(),
         // Owned by C — stub so routes compile
         '/profile': (_) => const _PlaceholderScreen(label: 'Profile'),
+      },
+      onGenerateRoute: (settings) {
+        // Handle /match/:matchId route
+        if (settings.name?.startsWith('/match/') == true) {
+          final matchId = settings.name!.replaceFirst('/match/', '');
+          return MaterialPageRoute(
+            builder: (_) => MatchDetailScreen(matchId: matchId),
+            settings: settings,
+          );
+        }
+        return null;
       },
     );
   }

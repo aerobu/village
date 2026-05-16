@@ -19,7 +19,10 @@ import 'package:geolocator/geolocator.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import '../models/help_request.dart';
 import '../services/firestore_service.dart';
+import '../services/matching_service.dart';
 import '../utils/privacy_utils.dart';
+import '../data/demo_seed.dart';
+import '../main.dart' show kDemoMode;
 
 class RequestFormScreen extends StatefulWidget {
   const RequestFormScreen({Key? key}) : super(key: key);
@@ -221,14 +224,62 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Request submitted! Finding volunteers...'),
-            duration: Duration(seconds: 3),
+            duration: Duration(seconds: 2),
           ),
         );
 
-        // Navigate to request detail screen
-        // For now, pop back to previous screen (map)
-        // TODO: Navigate to request detail screen once created
-        Navigator.of(context).pop();
+        // If in demo mode, perform matching immediately and show results
+        if (kDemoMode) {
+          try {
+            // Create a new request object with the Firestore-assigned ID
+            final fullRequest = HelpRequest(
+              id: requestId,
+              elderId: request.elderId,
+              type: request.type,
+              language: request.language,
+              latitude: request.latitude,
+              longitude: request.longitude,
+              urgency: request.urgency,
+              description: request.description,
+              createdMs: request.createdMs,
+              expiresMs: request.expiresMs,
+              isAccepted: request.isAccepted,
+              isCompleted: request.isCompleted,
+            );
+
+            // Perform local matching with demo volunteers
+            final matches = MatchingService.performMatching(
+              DemoSeed.volunteers,
+              [fullRequest],
+            );
+
+            if (matches.isNotEmpty) {
+              // Save matches to Firestore for demo purposes
+              await FirestoreService.saveBatchMatches(matches);
+
+              // Navigate to the first match detail screen
+              if (mounted) {
+                Navigator.of(context).pushNamed(
+                  '/match/${matches.first.id}',
+                );
+              }
+            } else {
+              // No matches found, pop back to map
+              if (mounted) {
+                Navigator.of(context).pop();
+              }
+            }
+          } catch (e) {
+            debugPrint('[RequestForm] matching error: $e');
+            if (mounted) {
+              Navigator.of(context).pop();
+            }
+          }
+        } else {
+          // In live mode, the Cloud Function will handle matching.
+          // Just pop back to map for now.
+          Navigator.of(context).pop();
+        }
       }
     } on LocationServiceDisabledException {
       if (mounted) {
