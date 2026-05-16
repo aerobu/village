@@ -1,0 +1,12 @@
+{
+  "name": "Village",
+  "short_name": "Village",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#1B5E20",
+  "description": "Connecting elders with trusted volunteers.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": []
+}
