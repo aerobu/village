@@ -36,12 +36,14 @@ class FirestoreService {
   }
 
   /// Fetch all available volunteers (active in last 24 hours).
+  /// Limited to 50 to stay within Spark free tier quota (see FIREBASE_LIMITS.md).
   static Future<List<UserPublic>> getAvailableVolunteers() async {
     final oneDayAgo =
         DateTime.now().subtract(Duration(days: 1)).millisecondsSinceEpoch;
     final snapshot = await _firestore
         .collection(usersCollection)
         .where('lastSeenMs', isGreaterThan: oneDayAgo)
+        .limit(50)
         .get();
 
     return snapshot.docs
@@ -69,6 +71,7 @@ class FirestoreService {
   }
 
   /// Fetch all active requests (not completed, not expired).
+  /// Limited to 50 to stay within Spark free tier quota (see FIREBASE_LIMITS.md).
   static Future<List<HelpRequest>> getActiveRequests() async {
     final now = DateTime.now().millisecondsSinceEpoch;
     final snapshot = await _firestore
@@ -76,6 +79,7 @@ class FirestoreService {
         .where('isCompleted', isEqualTo: false)
         .where('expiresMs', isGreaterThan: now)
         .orderBy('createdMs', descending: true)
+        .limit(50)
         .get();
 
     return snapshot.docs
@@ -84,11 +88,13 @@ class FirestoreService {
   }
 
   /// Fetch requests by elder ID.
+  /// Limited to 20 to stay within Spark free tier quota (see FIREBASE_LIMITS.md).
   static Future<List<HelpRequest>> getRequestsByElder(String elderId) async {
     final snapshot = await _firestore
         .collection(requestsCollection)
         .where('elderId', isEqualTo: elderId)
         .orderBy('createdMs', descending: true)
+        .limit(20)
         .get();
 
     return snapshot.docs
@@ -135,11 +141,14 @@ class FirestoreService {
   }
 
   /// Stream matches for a request (updates in real-time).
+  /// Limited to 10 to stay within Spark free tier quota (see FIREBASE_LIMITS.md).
+  /// Remember to dispose the listener immediately after use.
   static Stream<List<MatchDoc>> watchMatchesForRequest(String requestId) {
     return _firestore
         .collection(matchesCollection)
         .where('requestId', isEqualTo: requestId)
         .orderBy('score', descending: true)
+        .limit(10)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) =>
@@ -148,11 +157,14 @@ class FirestoreService {
   }
 
   /// Stream matches for a volunteer (updates in real-time).
+  /// Limited to 20 to stay within Spark free tier quota (see FIREBASE_LIMITS.md).
+  /// Remember to dispose the listener immediately after use.
   static Stream<List<MatchDoc>> watchMatchesForVolunteer(String volunteerId) {
     return _firestore
         .collection(matchesCollection)
         .where('volunteerId', isEqualTo: volunteerId)
         .orderBy('createdMs', descending: true)
+        .limit(20)
         .snapshots()
         .map((snapshot) => snapshot.docs
             .map((doc) =>
