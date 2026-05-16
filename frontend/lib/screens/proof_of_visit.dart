@@ -50,8 +50,8 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
 
   @override
   Widget build(BuildContext context) {
-    final photoUrl = widget.match.proofPhotoUrl ??
-        'https://images.unsplash.com/photo-1576765608535-5f04d1e3f289?w=800&auto=format&fit=crop';
+    // Use local asset (proof_stub.jpg added by Person A) for better offline reliability
+    final photoUrl = widget.match.proofPhotoUrl ?? 'assets/images/proof_stub.jpg';
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,
@@ -137,31 +137,53 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen>
         borderRadius: BorderRadius.circular(20),
         child: Stack(
           children: [
-            CachedNetworkImage(
-              imageUrl: url,
-              width: double.infinity,
-              height: 280,
-              fit: BoxFit.cover,
-              placeholder: (_, __) => Container(
-                height: 280,
-                color: Theme.of(context).colorScheme.surface,
-                child: const Center(child: CircularProgressIndicator()),
-              ),
-              errorWidget: (_, __, ___) => Container(
-                height: 280,
-                color: Theme.of(context).colorScheme.surface,
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
-                      SizedBox(height: 8),
-                      Text('Photo not available'),
-                    ],
+            // Load local asset (proof_stub.jpg) or network image
+            url.startsWith('assets/')
+                ? Image.asset(
+                    url,
+                    width: double.infinity,
+                    height: 280,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => Container(
+                      height: 280,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
+                            SizedBox(height: 8),
+                            Text('Photo not available'),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                : CachedNetworkImage(
+                    imageUrl: url,
+                    width: double.infinity,
+                    height: 280,
+                    fit: BoxFit.cover,
+                    placeholder: (_, __) => Container(
+                      height: 280,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: const Center(child: CircularProgressIndicator()),
+                    ),
+                    errorWidget: (_, __, ___) => Container(
+                      height: 280,
+                      color: Theme.of(context).colorScheme.surface,
+                      child: const Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.photo_camera_rounded, size: 48, color: Colors.white38),
+                            SizedBox(height: 8),
+                            Text('Photo not available'),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ),
             Positioned(
               bottom: 0,
               left: 0,
