@@ -9,8 +9,8 @@ abstract class AppTheme {
   static const Color background = Color(0xFF121212);    // near-black
   static const Color surface = Color(0xFF1E1E1E);
   static const Color onSurface = Color(0xFFE0E0E0);
-  static const Color markerVolunteer = Color(0xFF43A047); // green pulse
-  static const Color markerElder = Color(0xFFE53935);     // red pin
+  static const Color markerVolunteer = Color(0xFF00E676); // bright spring green — pops against dark map
+  static const Color markerElder = Color(0xFFFF1744);     // vivid red — elder's location stands out
 
   static ThemeData get dark => ThemeData(
         useMaterial3: true,
