@@ -9,18 +9,27 @@ class FirestoreService {
   FirestoreService({FirebaseFirestore? firestore})
       : _firestore = firestore ?? FirebaseFirestore.instance;
 
-  /// Submit a help request — writes to `requests` collection (triggers Cloud Function).
-  /// Truncates approxLocation to 2 dp before write (privacy invariant).
+  /// Submit a help request — writes to `requests` collection.
+  /// Truncates coordinates to 2 dp before write (privacy invariant for TDD #2).
   Future<String> submitRequest(HelpRequest request) async {
-    final masked = truncateTo2Dp(request.approxLocation);
+    // Mask coordinates to 2dp for privacy (TDD #2 requirement)
+    final maskedLat = (request.latitude * 100).truncate() / 100.0;
+    final maskedLng = (request.longitude * 100).truncate() / 100.0;
+
     final data = {
-      'elderUid': request.elderUid,
-      'needType': request.needType,
-      'requiredLanguage': request.requiredLanguage,
-      'approxLocation': masked,
-      'status': request.status,
-      'createdAt': FieldValue.serverTimestamp(),
+      'id': request.id,
+      'elderId': request.elderId,
+      'type': request.type,
+      'language': request.language,
+      'latitude': maskedLat,
+      'longitude': maskedLng,
+      'urgency': request.urgency,
+      'description': request.description,
+      'createdMs': request.createdMs,
+      'isAccepted': false,
+      'isCompleted': false,
     };
+
     final ref = await _firestore.collection('requests').add(data);
     return ref.id;
   }
