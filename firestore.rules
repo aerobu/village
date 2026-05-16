@@ -2,29 +2,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{db}/documents {
 
-    // Anyone signed in can read public profiles.
-    match /users_public/{uid} {
+    // User profiles. B's FirestoreService writes to `users` (not the
+    // users_public/users_pii split SCHEMA.md originally proposed —
+    // SCHEMA was updated by B to match implementation).
+    match /users/{uid} {
       allow read: if request.auth != null;
+      // A user can write their own profile. The auth UID must match the
+      // doc id (which is also the `id` field inside the doc).
       allow write: if request.auth.uid == uid;
     }
 
-    // PII: only the user themselves. Cloud Functions use Admin SDK and bypass rules.
-    match /users_pii/{uid} {
-      allow read, write: if request.auth.uid == uid;
-    }
-
-    // Requests: elder writes their own; everyone reads pending requests.
+    // Help requests created by elders.
+    // Note: field is `elderId` (matches HelpRequest.toJson), not `elderUid`
+    // as originally drafted in SCHEMA.md.
     match /requests/{requestId} {
       allow read: if request.auth != null;
-      allow create: if request.auth.uid == request.resource.data.elderUid;
+      allow create: if request.auth.uid == request.resource.data.elderId;
+      // Updates are open to any authenticated user for the demo (volunteers
+      // accepting a match flip isAccepted). Tighten after hackathon.
       allow update: if request.auth != null;
     }
 
-    // Matches: only the two participants.
+    // Match docs produced by the algorithm.
+    // For the demo, client-side matching runs in DEMO_MODE so the client
+    // needs write access. In production this would be locked down to the
+    // Cloud Function only (allow write: if false).
     match /matches/{matchId} {
-      allow read: if request.auth.uid == resource.data.elderUid
-                  || request.auth.uid == resource.data.volunteerUid;
-      allow write: if false; // Cloud Function only
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
   }
 }
