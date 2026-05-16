@@ -149,15 +149,9 @@ class _MapScreenState extends State<MapScreen> {
         ),
         children: [
           TileLayer(
-            // CartoDB Dark Matter — clean dark basemap, no API key required
-            // for non-production use. Pairs with our dark theme so the
-            // pulsing pins read as the only points of interest.
-            // Subdomains a/b/c/d for parallel tile loading.
-            urlTemplate:
-                'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-            subdomains: const ['a', 'b', 'c', 'd'],
+            // OpenStreetMap — no API key required
+            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
             userAgentPackageName: 'com.village.app',
-            // Attribution: © OpenStreetMap contributors, © CARTO
           ),
           MarkerLayer(markers: _buildMarkers()),
         ],
