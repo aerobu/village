@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
+import 'data/demo_seed.dart';
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/request_form.dart';
@@ -47,6 +48,32 @@ void main() async {
     }
   } catch (e) {
     debugPrint('[main] anonymous sign-in failed: $e');
+  }
+
+  // Seed the anon user's profile in /users/{uid}. B's MatchDetailScreen
+  // calls FirestoreService.getUserProfile(request.elderId) to render the
+  // elder card; without this doc that call returns null and the match
+  // detail screen shows "Elder profile not found".
+  //
+  // We borrow DemoSeed.elder's fields but stamp the doc with the real
+  // anon UID so the security rule (auth.uid == doc.id) passes.
+  try {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'id': uid,
+        'name': DemoSeed.elder.name,
+        'photoUrl': DemoSeed.elder.photoUrl,
+        'language': DemoSeed.elder.language,
+        'latitude': DemoSeed.elder.latitude,
+        'longitude': DemoSeed.elder.longitude,
+        'skills': DemoSeed.elder.skills,
+        'lastSeenMs': DateTime.now().millisecondsSinceEpoch,
+        'backgroundCheckVerified': false,
+      }, SetOptions(merge: true));
+    }
+  } catch (e) {
+    debugPrint('[main] elder profile seed failed: $e');
   }
 
   runApp(const VillageApp());
