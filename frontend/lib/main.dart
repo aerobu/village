@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
@@ -33,6 +34,19 @@ void main() async {
     persistenceEnabled: true,
     cacheSizeBytes: 10 * 1024 * 1024, // 10 MB — plenty for this demo
   );
+
+  // Anonymous sign-in so B's RequestFormScreen has a non-null
+  // FirebaseAuth.instance.currentUser. Anonymous auth is unlimited on
+  // the Spark plan (see docs/FIREBASE_LIMITS.md). Non-blocking — if it
+  // fails (offline, etc.) the form will surface its own error rather
+  // than the app failing to boot.
+  try {
+    if (FirebaseAuth.instance.currentUser == null) {
+      await FirebaseAuth.instance.signInAnonymously();
+    }
+  } catch (e) {
+    debugPrint('[main] anonymous sign-in failed: $e');
+  }
 
   runApp(const VillageApp());
 }
