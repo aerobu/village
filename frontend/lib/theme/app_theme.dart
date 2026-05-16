@@ -169,7 +169,7 @@ abstract class AppTheme {
     ),
 
     // Cards
-    cardTheme: CardTheme(
+    cardTheme: CardThemeData(
       color: surface,
       elevation: 0.5,
       shadowColor: Colors.black.withOpacity(0.06),
