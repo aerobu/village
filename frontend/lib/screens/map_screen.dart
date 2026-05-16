@@ -6,6 +6,7 @@ import '../data/demo_seed.dart';
 import '../models/user_public.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pulsing_marker.dart';
+import 'profile_screen.dart';
 
 /// Main map screen — shows the elder's location and nearby volunteer pins.
 ///
@@ -118,6 +119,24 @@ class _MapScreenState extends State<MapScreen> {
                           side: const BorderSide(color: AppTheme.accent),
                         ))
                     .toList(),
+              ),
+            ],
+            if (!isElder) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.pop(context); // Close bottom sheet
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ProfileScreen(user: user),
+                      ),
+                    );
+                  },
+                  child: const Text('View Full Profile'),
+                ),
               ),
             ],
           ],

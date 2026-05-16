@@ -8,6 +8,8 @@ import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
 import 'screens/request_form.dart';
 import 'screens/match_detail_screen.dart';
+import 'screens/profile_screen.dart';
+import 'data/demo_seed.dart';
 
 /// When `DEMO_MODE=true` (default), the app runs entirely off `DemoSeed`
 /// in-memory data and never reads from Firestore. This keeps us comfortably
@@ -66,8 +68,8 @@ class VillageApp extends StatelessWidget {
         '/': (_) => const MapScreen(),
         // Owned by B — request form
         '/request': (_) => const RequestFormScreen(),
-        // Owned by C — stub so routes compile
-        '/profile': (_) => const _PlaceholderScreen(label: 'Profile'),
+        // Owned by C — profile screen showing elder's profile
+        '/profile': (_) => ProfileScreen(user: DemoSeed.elder),
       },
       onGenerateRoute: (settings) {
         // Handle /match/:matchId route
@@ -84,19 +86,3 @@ class VillageApp extends StatelessWidget {
   }
 }
 
-/// Temporary placeholder so named routes compile before B/C add their screens.
-/// DELETE once the real screens land.
-class _PlaceholderScreen extends StatelessWidget {
-  const _PlaceholderScreen({required this.label});
-  final String label;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: Text(label)),
-      body: Center(
-        child: Text(label, style: Theme.of(context).textTheme.headlineMedium),
-      ),
-    );
-  }
-}
