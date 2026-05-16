@@ -1,8 +1,8 @@
 /**
  * Request form screen for elders to submit help requests.
- * 
+ *
  * Owned by B (matching engine owner).
- * 
+ *
  * Flow:
  * 1. Elder selects request type (grocery, transportation, tech-help, etc.)
  * 2. Elder selects their preferred language
@@ -15,8 +15,11 @@
  */
 
 import 'package:flutter/material.dart';
-// TODO: import 'package:geolocator/geolocator.dart' for location services
-// TODO: import FirestoreService, HelpRequest
+import 'package:geolocator/geolocator.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../models/help_request.dart';
+import '../services/firestore_service.dart';
+import '../utils/privacy_utils.dart';
 
 class RequestFormScreen extends StatefulWidget {
   const RequestFormScreen({Key? key}) : super(key: key);
@@ -167,40 +170,78 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
     setState(() => _isSubmitting = true);
 
     try {
-      // TODO: Capture current location
-      // final position = await Geolocator.getCurrentPosition();
-      
-      // TODO: Truncate to 2 dp for privacy (TDD #2)
-      // final truncatedLat = (position.latitude * 100).round() / 100;
-      // final truncatedLng = (position.longitude * 100).round() / 100;
+      // Step 1: Get current user ID from Firebase Auth
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated. Please log in first.');
+      }
+      final elderId = currentUser.uid;
 
-      // TODO: Create and save request to Firestore (TDD #3)
-      // final request = HelpRequest(
-      //   id: '',
-      //   elderId: currentUserId,
-      //   type: _selectedType!,
-      //   language: _selectedLanguage!,
-      //   latitude: truncatedLat,
-      //   longitude: truncatedLng,
-      //   urgency: _urgency,
-      //   description: _description,
-      //   createdMs: DateTime.now().millisecondsSinceEpoch,
-      // );
-      // await FirestoreService.createRequest(request);
+      // Step 2: Capture current location
+      final permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        final requested = await Geolocator.requestPermission();
+        if (requested != LocationPermission.whileInUse &&
+            requested != LocationPermission.always) {
+          throw Exception('Location permission denied');
+        }
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        timeLimit: const Duration(seconds: 10),
+      );
+
+      // Step 3: Truncate coordinates to 2 dp for privacy (TDD #2)
+      final (:lat, :lng) = PrivacyUtils.truncateLocation(
+        position.latitude,
+        position.longitude,
+      );
+
+      // Step 4: Create and save request to Firestore (TDD #3)
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final request = HelpRequest(
+        id: '', // Firestore will generate the ID
+        elderId: elderId,
+        type: _selectedType!,
+        language: _selectedLanguage!,
+        latitude: lat,
+        longitude: lng,
+        urgency: _urgency,
+        description: _description,
+        createdMs: now,
+        expiresMs: now + (24 * 60 * 60 * 1000), // Expires in 24 hours
+        isAccepted: false,
+        isCompleted: false,
+      );
+
+      final requestId = await FirestoreService.createRequest(request);
 
       if (mounted) {
+        // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Request submitted! Finding volunteers...'),
             duration: Duration(seconds: 3),
           ),
         );
-        // TODO: Navigate to request detail or list screen
+
+        // Navigate to request detail screen
+        // For now, pop back to previous screen (map)
+        // TODO: Navigate to request detail screen once created
+        Navigator.of(context).pop();
       }
-    } catch (e) {
+    } on LocationServiceDisabledException {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          const SnackBar(
+            content: Text('Location services are disabled. Please enable them.'),
+          ),
+        );
+      }
+    } on Exception catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: ${e.toString()}')),
         );
       }
     } finally {

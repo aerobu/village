@@ -301,8 +301,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     setState(() => _isAccepting = true);
 
     try {
-      // TODO: Call FirestoreService.acceptMatch(widget.matchId)
-      // await FirestoreService.acceptMatch(widget.matchId);
+      // Call FirestoreService to update match and request
+      await FirestoreService.acceptMatch(widget.matchId);
 
       // Fake 5-second "accepting..." timer per OWNERSHIP.md
       await Future.delayed(const Duration(seconds: 5));
@@ -315,7 +315,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           ),
         );
 
-        // TODO: Navigate to navigation/tracking screen
+        // Navigate back to matches list
+        // TODO: Navigate to navigation/tracking screen for the actual task
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -351,9 +352,25 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
 
     if (confirmed ?? false) {
-      // TODO: Call FirestoreService.declineMatch(widget.matchId)
-      if (mounted) {
-        Navigator.of(context).pop();
+      try {
+        // Remove this match from Firestore
+        await FirestoreService.declineMatch(widget.matchId);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Match declined. You can see other matches.'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+          Navigator.of(context).pop();
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error declining match: $e')),
+          );
+        }
       }
     }
   }

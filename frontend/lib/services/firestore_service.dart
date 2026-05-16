@@ -159,4 +159,33 @@ class FirestoreService {
                 MatchDoc.fromJson(doc.data() as Map<String, dynamic>))
             .toList());
   }
+
+  /// Accept a match (volunteer has agreed to help).
+  /// Updates isAccepted flag and the corresponding request.
+  static Future<void> acceptMatch(String matchId) async {
+    final batch = _firestore.batch();
+
+    // Update match document
+    final matchRef = _firestore.collection(matchesCollection).doc(matchId);
+    batch.update(matchRef, {'isAccepted': true});
+
+    // Also update the corresponding request to isAccepted
+    final matchDoc = await matchRef.get();
+    if (matchDoc.exists) {
+      final match = MatchDoc.fromJson(matchDoc.data() as Map<String, dynamic>);
+      final requestRef = _firestore
+          .collection(requestsCollection)
+          .doc(match.requestId);
+      batch.update(requestRef, {'isAccepted': true});
+    }
+
+    await batch.commit();
+  }
+
+  /// Decline a match (volunteer is not interested).
+  /// Currently just removes the match document.
+  /// TODO: In production, might want to keep it and mark isDeclined=true
+  static Future<void> declineMatch(String matchId) async {
+    await _firestore.collection(matchesCollection).doc(matchId).delete();
+  }
 }
