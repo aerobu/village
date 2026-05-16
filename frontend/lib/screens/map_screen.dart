@@ -6,6 +6,7 @@ import '../data/demo_seed.dart';
 import '../models/user_public.dart';
 import '../theme/app_theme.dart';
 import '../widgets/pulsing_marker.dart';
+import '../widgets/village_logo.dart';
 import 'profile_screen.dart';
 
 /// Main map screen — shows the elder's location and nearby volunteer pins.
@@ -149,7 +150,8 @@ class _MapScreenState extends State<MapScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Village'),
+        title: const VillageLogoCompact(size: 32),
+        centerTitle: false,
         actions: [
           IconButton(
             icon: const Icon(Icons.person_outline),
@@ -158,28 +160,76 @@ class _MapScreenState extends State<MapScreen> {
           ),
         ],
       ),
-      body: FlutterMap(
-        mapController: _mapController,
-        options: MapOptions(
-          initialCenter: _center,
-          initialZoom: 14.0,
-          maxZoom: 18.0,
-          minZoom: 10.0,
-        ),
+      body: Stack(
         children: [
-          TileLayer(
-            // OpenStreetMap — no API key required
-            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-            userAgentPackageName: 'com.village.app',
+          FlutterMap(
+            mapController: _mapController,
+            options: MapOptions(
+              initialCenter: _center,
+              initialZoom: 14.0,
+              maxZoom: 18.0,
+              minZoom: 10.0,
+            ),
+            children: [
+              TileLayer(
+                // OpenStreetMap — no API key required
+                urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                userAgentPackageName: 'com.village.app',
+              ),
+              MarkerLayer(markers: _buildMarkers()),
+            ],
           ),
-          MarkerLayer(markers: _buildMarkers()),
+          // Bottom action button with footer
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 8,
+                    offset: const Offset(0, -2),
+                  ),
+                ],
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacing_xl,
+                vertical: AppTheme.spacing_lg,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FloatingActionButton.extended(
+                      onPressed: () => Navigator.pushNamed(context, '/request'),
+                      backgroundColor: AppTheme.primary,
+                      icon: const Icon(Icons.add),
+                      label: const Text('Request Help'),
+                    ),
+                  ),
+                  const SizedBox(height: AppTheme.spacing_lg),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      VillageLogo(size: 24, showText: false),
+                      const SizedBox(width: AppTheme.spacing_md),
+                      Text(
+                        'Connecting Communities',
+                        style: AppTheme.labelSmall.copyWith(
+                          color: AppTheme.textSecondary,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => Navigator.pushNamed(context, '/request'),
-        backgroundColor: AppTheme.primary,
-        icon: const Icon(Icons.add_circle_outline),
-        label: const Text('Request Help'),
       ),
     );
   }

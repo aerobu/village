@@ -62,7 +62,7 @@ class VillageApp extends StatelessWidget {
     return MaterialApp(
       title: 'Village',
       debugShowCheckedModeBanner: false,
-      theme: AppTheme.dark,
+      theme: AppTheme.light,
       initialRoute: '/',
       routes: {
         '/': (_) => const MapScreen(),

@@ -1,20 +1,19 @@
-/// Match detail screen for volunteers to see matched request details.
-/// 
+/// Match detail screen showing volunteer matched to help with a request.
+///
 /// Owned by B (matching engine owner).
-/// Flow: Volunteer sees match → clicks to see details → can accept or decline
-/// 
-/// TODO: Wire to Firestore stream for real-time updates
-/// TODO: Add decline/cancel functionality
-/// TODO: Add accept confirmation with timer (fake 5-second "accepting..." state)
+/// Flow: Elder sees matched volunteer → can review & accept match
+///
+/// Shows: volunteer profile, request details, match quality score, accept/decline
 
 import 'package:flutter/material.dart';
 import '../models/match_doc.dart';
 import '../models/help_request.dart';
 import '../models/user_public.dart';
 import '../services/firestore_service.dart';
+import '../theme/app_theme.dart';
+import '../widgets/village_logo.dart';
 
 class MatchDetailScreen extends StatefulWidget {
-  /// Match ID to load from Firestore
   final String matchId;
 
   const MatchDetailScreen({
@@ -26,15 +25,45 @@ class MatchDetailScreen extends StatefulWidget {
   State<MatchDetailScreen> createState() => _MatchDetailScreenState();
 }
 
-class _MatchDetailScreenState extends State<MatchDetailScreen> {
+class _MatchDetailScreenState extends State<MatchDetailScreen>
+    with SingleTickerProviderStateMixin {
   bool _isAccepting = false;
+  late AnimationController _avatarController;
+  late Animation<double> _avatarScale;
+  late Animation<double> _avatarOpacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _avatarController = AnimationController(
+      duration: const Duration(milliseconds: 300),
+      vsync: this,
+    );
+
+    _avatarScale = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _avatarController, curve: Curves.easeOutCubic),
+    );
+
+    _avatarOpacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _avatarController, curve: Curves.easeInOutQuad),
+    );
+
+    _avatarController.forward();
+  }
+
+  @override
+  void dispose() {
+    _avatarController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Match Details'),
-        centerTitle: true,
+        title: const VillageLogoCompact(size: 32),
+        elevation: 0,
+        centerTitle: false,
       ),
       body: FutureBuilder<MatchDoc?>(
         future: FirestoreService.getMatch(widget.matchId),
@@ -44,42 +73,42 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           }
 
           if (!matchSnapshot.hasData || matchSnapshot.data == null) {
-            return const Center(
-              child: Text('Match not found'),
-            );
+            return const Center(child: Text('Match not found'));
           }
 
           final match = matchSnapshot.data!;
 
-          // Load request and elder details
-          return FutureBuilder<HelpRequest?>(
-            future: FirestoreService.getRequest(match.requestId),
-            builder: (context, requestSnapshot) {
-              if (requestSnapshot.connectionState == ConnectionState.waiting) {
+          return FutureBuilder<UserPublic?>(
+            future: FirestoreService.getUserProfile(match.volunteerId),
+            builder: (context, volunteerSnapshot) {
+              if (volunteerSnapshot.connectionState ==
+                  ConnectionState.waiting) {
                 return const Center(child: CircularProgressIndicator());
               }
 
-              if (!requestSnapshot.hasData || requestSnapshot.data == null) {
-                return const Center(child: Text('Request not found'));
+              if (!volunteerSnapshot.hasData ||
+                  volunteerSnapshot.data == null) {
+                return const Center(child: Text('Volunteer profile not found'));
               }
 
-              final request = requestSnapshot.data!;
+              final volunteer = volunteerSnapshot.data!;
 
-              return FutureBuilder<UserPublic?>(
-                future: FirestoreService.getUserProfile(request.elderId),
-                builder: (context, elderSnapshot) {
-                  if (elderSnapshot.connectionState ==
+              return FutureBuilder<HelpRequest?>(
+                future: FirestoreService.getRequest(match.requestId),
+                builder: (context, requestSnapshot) {
+                  if (requestSnapshot.connectionState ==
                       ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
                   }
 
-                  if (!elderSnapshot.hasData || elderSnapshot.data == null) {
-                    return const Center(child: Text('Elder profile not found'));
+                  if (!requestSnapshot.hasData ||
+                      requestSnapshot.data == null) {
+                    return const Center(child: Text('Request not found'));
                   }
 
-                  final elder = elderSnapshot.data!;
+                  final request = requestSnapshot.data!;
 
-                  return _buildContent(match, request, elder);
+                  return _buildContent(match, volunteer, request);
                 },
               );
             },
@@ -89,207 +118,380 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _buildContent(MatchDoc match, HelpRequest request, UserPublic elder) {
+  Widget _buildContent(
+    MatchDoc match,
+    UserPublic volunteer,
+    HelpRequest request,
+  ) {
+    final distanceKm =
+        ((volunteer.latitude - request.latitude).abs() * 111.32).round();
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Elder info card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Requesting Help:',
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    elder.name,
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Preferred language: ${elder.language}',
-                    style: const TextStyle(color: Colors.grey),
-                  ),
+          // Hero section with volunteer avatar and info
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primary,
+                  AppTheme.accent,
                 ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-
-          // Request details card
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        request.type.toUpperCase(),
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(color: Colors.blue),
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacing_xl,
+              vertical: AppTheme.spacing_xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                // Avatar with scale animation
+                ScaleTransition(
+                  scale: _avatarScale,
+                  child: FadeTransition(
+                    opacity: _avatarOpacity,
+                    child: Container(
+                      width: 120,
+                      height: 120,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppTheme.primary.withOpacity(0.8),
+                            AppTheme.accent.withOpacity(0.6),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.2),
+                            blurRadius: 12,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
                       ),
-                      _buildUrgencyBadge(request.urgency),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Request Language: ${request.language}',
-                    style: const TextStyle(fontWeight: FontWeight.w500),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    request.description,
-                    style: Theme.of(context).textTheme.bodyLarge,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-
-          // Match score & reason
-          Card(
-            color: Colors.green.shade50,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Match Quality',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey,
-                      fontWeight: FontWeight.w500,
+                      child: Center(
+                        child: Text(
+                          volunteer.name
+                              .split(' ')
+                              .map((s) => s[0])
+                              .join(),
+                          style: AppTheme.displayLarge.copyWith(
+                            color: Colors.white,
+                            fontSize: 48,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                ),
+                const SizedBox(height: AppTheme.spacing_lg),
+
+                // Name (primary color text)
+                Text(
+                  volunteer.name,
+                  style: AppTheme.displayMedium.copyWith(
+                    color: Colors.white,
+                    fontSize: 28,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: AppTheme.spacing_md),
+
+                // Language badge with flag
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing_md,
+                    vertical: AppTheme.spacing_sm,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusSmall),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.4),
+                    ),
+                  ),
+                  child: Text(
+                    '🗣️ ${volunteer.language.toUpperCase()}',
+                    style: AppTheme.labelSmall.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing_xl),
+
+                // Distance card
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppTheme.spacing_lg,
+                    vertical: AppTheme.spacing_md,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.2),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
+                      const Icon(Icons.location_on, color: Colors.white, size: 20),
+                      const SizedBox(width: AppTheme.spacing_sm),
                       Text(
-                        '${(match.score * 100).toStringAsFixed(0)}% Match',
-                        style: Theme.of(context)
-                            .textTheme
-                            .headlineSmall
-                            ?.copyWith(color: Colors.green),
+                        '${distanceKm}km away',
+                        style: AppTheme.labelLarge.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
-                      _buildScoreBar(match.score),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    match.reason,
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Action buttons
-          SizedBox(
-            width: double.infinity,
-            child: Column(
-              children: [
-                ElevatedButton(
-                  onPressed: _isAccepting ? null : _handleAccept,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _isAccepting
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor:
-                                AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : const Text(
-                          'Accept & Start',
-                          style: TextStyle(fontSize: 16),
-                        ),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: _isAccepting ? null : _handleDecline,
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: const Text('Not Right Now'),
                 ),
               ],
             ),
           ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildUrgencyBadge(int urgency) {
-    final colors = {
-      1: Colors.blue,
-      2: Colors.cyan,
-      3: Colors.orange,
-      4: Colors.deepOrange,
-      5: Colors.red,
-    };
-
-    final color = colors[urgency] ?? Colors.grey;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
-        border: Border.all(color: color),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        'Urgency $urgency/5',
-        style: TextStyle(
-          color: color,
-          fontWeight: FontWeight.w500,
-          fontSize: 12,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScoreBar(double score) {
-    return SizedBox(
-      width: 100,
-      height: 8,
-      child: Stack(
-        children: [
+          // Match score card
           Container(
+            margin: const EdgeInsets.all(AppTheme.spacing_xl),
+            padding: const EdgeInsets.all(AppTheme.spacing_lg),
             decoration: BoxDecoration(
-              color: Colors.grey.shade300,
-              borderRadius: BorderRadius.circular(4),
+              color: AppTheme.success.withOpacity(0.08),
+              border: Border.all(
+                color: AppTheme.success.withOpacity(0.3),
+              ),
+              borderRadius: BorderRadius.circular(AppTheme.radiusMedium),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Perfect Match!',
+                  style: AppTheme.labelLarge.copyWith(
+                    color: AppTheme.success,
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing_md),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '${(match.score * 100).toStringAsFixed(0)}%',
+                          style: AppTheme.displayMedium.copyWith(
+                            color: AppTheme.success,
+                            fontSize: 40,
+                          ),
+                        ),
+                        Text(
+                          'Match Score',
+                          style: AppTheme.bodySmall,
+                        ),
+                      ],
+                    ),
+                    const Icon(
+                      Icons.favorite,
+                      color: AppTheme.success,
+                      size: 48,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppTheme.spacing_lg),
+                Text(
+                  match.reason,
+                  style: AppTheme.bodyMedium.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: AppTheme.textSecondary,
+                  ),
+                ),
+              ],
             ),
           ),
-          FractionallySizedBox(
-            widthFactor: score,
-            child: Container(
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(4),
+
+          // Skills section
+          if (volunteer.skills.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppTheme.spacing_xl,
               ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Skills',
+                    style: AppTheme.labelLarge,
+                  ),
+                  const SizedBox(height: AppTheme.spacing_md),
+                  Wrap(
+                    spacing: AppTheme.spacing_md,
+                    runSpacing: AppTheme.spacing_sm,
+                    children: volunteer.skills
+                        .split(',')
+                        .map((skill) => Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: AppTheme.spacing_md,
+                                vertical: AppTheme.spacing_sm,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppTheme.primary.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(
+                                  AppTheme.radiusSmall,
+                                ),
+                                border: Border.all(
+                                  color: AppTheme.primary.withOpacity(0.2),
+                                ),
+                              ),
+                              child: Text(
+                                skill.trim(),
+                                style: AppTheme.bodySmall.copyWith(
+                                  color: AppTheme.primary,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ))
+                        .toList(),
+                  ),
+                  const SizedBox(height: AppTheme.spacing_xl),
+                ],
+              ),
+            ),
+
+          // Request details section
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacing_xl,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your Request',
+                  style: AppTheme.labelLarge,
+                ),
+                const SizedBox(height: AppTheme.spacing_md),
+                Container(
+                  padding: const EdgeInsets.all(AppTheme.spacing_lg),
+                  decoration: BoxDecoration(
+                    color: AppTheme.background,
+                    borderRadius: BorderRadius.circular(
+                      AppTheme.radiusMedium,
+                    ),
+                    border: Border.all(
+                      color: AppTheme.disabled.withOpacity(0.5),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: AppTheme.spacing_md,
+                          vertical: AppTheme.spacing_sm,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppTheme.accent.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(
+                            AppTheme.radiusSmall,
+                          ),
+                        ),
+                        child: Text(
+                          request.type.toUpperCase(),
+                          style: AppTheme.labelSmall.copyWith(
+                            color: AppTheme.primary,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: AppTheme.spacing_md),
+                      Text(
+                        request.description,
+                        style: AppTheme.bodyMedium,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing_xl),
+              ],
+            ),
+          ),
+
+          // Action buttons
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: AppTheme.spacing_xl,
+              vertical: AppTheme.spacing_xl,
+            ),
+            child: Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isAccepting ? null : _handleAccept,
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing_xl,
+                        vertical: AppTheme.spacing_lg,
+                      ),
+                    ),
+                    child: _isAccepting
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    Colors.white,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: AppTheme.spacing_md),
+                              const Text('Connecting...'),
+                            ],
+                          )
+                        : const Text('Accept & Help'),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing_md),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isAccepting ? null : _handleDecline,
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppTheme.spacing_xl,
+                        vertical: AppTheme.spacing_lg,
+                      ),
+                    ),
+                    child: const Text('Not Right Now'),
+                  ),
+                ),
+                const SizedBox(height: AppTheme.spacing_xl),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    VillageLogo(size: 20, showText: false),
+                    const SizedBox(width: AppTheme.spacing_sm),
+                    Text(
+                      'Powered by Village.ai',
+                      style: AppTheme.labelSmall.copyWith(
+                        color: AppTheme.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
           ),
         ],
@@ -301,22 +503,17 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     setState(() => _isAccepting = true);
 
     try {
-      // Call FirestoreService to update match and request
       await FirestoreService.acceptMatch(widget.matchId);
-
-      // Fake 5-second "accepting..." timer per OWNERSHIP.md
       await Future.delayed(const Duration(seconds: 5));
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Match accepted! You\'re helping now.'),
+            content: Text('Match accepted! Connection made.'),
             duration: Duration(seconds: 2),
           ),
         );
 
-        // Navigate back to matches list
-        // TODO: Navigate to navigation/tracking screen for the actual task
         Navigator.of(context).pop();
       }
     } catch (e) {
@@ -337,7 +534,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Decline Match?'),
-        content: const Text('You can still see other matches later.'),
+        content: const Text('You can see other matches later.'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -353,13 +550,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
     if (confirmed ?? false) {
       try {
-        // Remove this match from Firestore
         await FirestoreService.declineMatch(widget.matchId);
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Match declined. You can see other matches.'),
+              content: Text('Match declined.'),
               duration: Duration(seconds: 2),
             ),
           );
