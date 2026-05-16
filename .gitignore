@@ -1,0 +1,5 @@
+# WSL / Windows artifacts
+*:Zone.Identifier
+
+# Local Claude Code settings (user-specific)
+.claude/settings.local.json
