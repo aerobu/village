@@ -5,7 +5,7 @@ import '../models/user_public.dart';
 ///
 /// All coordinates are truncated to 2 decimal places (~1 km) per the
 /// privacy invariant in CLAUDE.md. They're clustered around a small
-/// Toronto neighbourhood for demo plausibility.
+/// downtown Portland, OR for demo plausibility.
 ///
 /// Run with: --dart-define=DEMO_SEED=true
 ///
@@ -21,7 +21,7 @@ abstract class DemoSeed {
     role: 'elder',
     displayName: 'Meena R.',
     languages: ['ta', 'en'],
-    approxLocation: GeoPoint(43.65, -79.38), // downtown Toronto, 2dp
+    approxLocation: GeoPoint(45.52, -122.68), // downtown Portland, Pearl District, 2dp
     rating: 4.8,
     backgroundCheck: false,
     needs: ['groceries', 'companionship'],
@@ -34,7 +34,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Priya S.',
       languages: ['ta', 'en'],        // Tamil match — should rank #1
-      approxLocation: GeoPoint(43.66, -79.39),
+      approxLocation: GeoPoint(45.53, -122.69) // NW Portland,
       rating: 4.9,
       backgroundCheck: true,
       skills: ['groceries', 'companionship'],
@@ -44,7 +44,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Arjun M.',
       languages: ['hi', 'en'],
-      approxLocation: GeoPoint(43.64, -79.37), // closer, but no Tamil
+      approxLocation: GeoPoint(45.51, -122.67), // closer, but no Tamil
       rating: 4.7,
       backgroundCheck: true,
       skills: ['groceries', 'transport'],
@@ -54,7 +54,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Sunita B.',
       languages: ['bn', 'en'],
-      approxLocation: GeoPoint(43.67, -79.40),
+      approxLocation: GeoPoint(45.52, -122.70) // West Portland,
       rating: 4.6,
       backgroundCheck: true,
       skills: ['companionship'],
@@ -64,7 +64,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Ravi K.',
       languages: ['ta', 'hi', 'en'],  // also speaks Tamil
-      approxLocation: GeoPoint(43.63, -79.36),
+      approxLocation: GeoPoint(45.54, -122.68) // North Portland,
       rating: 4.5,
       backgroundCheck: true,
       skills: ['transport', 'groceries'],
@@ -74,7 +74,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Ananya P.',
       languages: ['hi', 'bn'],
-      approxLocation: GeoPoint(43.68, -79.41),
+      approxLocation: GeoPoint(45.53, -122.66) // NE Portland,
       rating: 4.4,
       backgroundCheck: false,
       skills: ['companionship'],
