@@ -14,6 +14,10 @@ import '../widgets/pulsing_marker.dart';
 ///   2. Volunteer pins glow/pulse on the map.
 ///   3. FAB → request form (owned by B).
 ///
+/// NOTE: B's UserPublic doesn't carry a `role` field, so elder-vs-volunteer
+/// distinction is via `DemoSeed.isElder(user)`. See demo_seed.dart for
+/// the schema divergence rationale.
+///
 /// Owner: A
 class MapScreen extends StatefulWidget {
   const MapScreen({super.key});
@@ -27,17 +31,14 @@ class _MapScreenState extends State<MapScreen> {
 
   // Centre the map on the elder's approximate location
   static final LatLng _center = LatLng(
-    DemoSeed.elder.approxLocation.latitude,
-    DemoSeed.elder.approxLocation.longitude,
+    DemoSeed.elder.latitude,
+    DemoSeed.elder.longitude,
   );
 
   List<Marker> _buildMarkers() {
     return DemoSeed.allPins.map((UserPublic user) {
-      final LatLng pos = LatLng(
-        user.approxLocation.latitude,
-        user.approxLocation.longitude,
-      );
-      final bool isElder = user.role == 'elder';
+      final LatLng pos = LatLng(user.latitude, user.longitude);
+      final bool isElder = DemoSeed.isElder(user);
 
       return Marker(
         point: pos,
@@ -55,6 +56,7 @@ class _MapScreenState extends State<MapScreen> {
   }
 
   void _showUserCard(UserPublic user) {
+    final bool isElder = DemoSeed.isElder(user);
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surface,
@@ -70,11 +72,11 @@ class _MapScreenState extends State<MapScreen> {
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: user.role == 'volunteer'
-                      ? AppTheme.markerVolunteer
-                      : AppTheme.markerElder,
+                  backgroundColor: isElder
+                      ? AppTheme.markerElder
+                      : AppTheme.markerVolunteer,
                   child: Icon(
-                    user.role == 'volunteer' ? Icons.person : Icons.elderly,
+                    isElder ? Icons.elderly : Icons.person,
                     color: Colors.white,
                   ),
                 ),
@@ -82,10 +84,10 @@ class _MapScreenState extends State<MapScreen> {
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(user.displayName,
+                    Text(user.name,
                         style: Theme.of(context).textTheme.titleMedium),
                     Text(
-                      user.languages.join(' · ').toUpperCase(),
+                      user.language.toUpperCase(),
                       style: Theme.of(context)
                           .textTheme
                           .bodySmall
@@ -94,24 +96,30 @@ class _MapScreenState extends State<MapScreen> {
                   ],
                 ),
                 const Spacer(),
-                if (user.backgroundCheck)
-                  Chip(
-                    label: const Text('✓ Verified',
+                if (user.backgroundCheckVerified)
+                  const Chip(
+                    label: Text('✓ Verified',
                         style: TextStyle(fontSize: 11)),
                     backgroundColor: AppTheme.primary,
-                    labelStyle: const TextStyle(color: Colors.white),
+                    labelStyle: TextStyle(color: Colors.white),
                   ),
               ],
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                const Icon(Icons.star, color: AppTheme.accent, size: 16),
-                const SizedBox(width: 4),
-                Text('${user.rating}',
-                    style: Theme.of(context).textTheme.bodyMedium),
-              ],
-            ),
+            if (user.skills.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 6,
+                children: user.skills
+                    .split(',')
+                    .map((s) => Chip(
+                          label: Text(s.trim(),
+                              style: const TextStyle(fontSize: 11)),
+                          backgroundColor: AppTheme.surface,
+                          side: const BorderSide(color: AppTheme.accent),
+                        ))
+                    .toList(),
+              ),
+            ],
           ],
         ),
       ),
