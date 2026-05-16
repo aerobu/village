@@ -7,7 +7,11 @@ import '../models/user_public.dart';
 /// privacy invariant in CLAUDE.md. They're clustered around a small
 /// downtown Portland, OR for demo plausibility.
 ///
-/// Run with: --dart-define=DEMO_SEED=true
+/// ⚠️ FREE TIER GUARDRAIL: this list must stay in-memory. Do NOT replace it
+/// with a Firestore query — that would burn through the 50K reads/day Spark
+/// quota on a busy demo. See docs/FIREBASE_LIMITS.md.
+///
+/// Run with: --dart-define=DEMO_SEED=true (and DEMO_MODE=true, the default)
 ///
 /// Owner: A
 abstract class DemoSeed {

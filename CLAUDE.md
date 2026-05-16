@@ -52,6 +52,12 @@ village/
 - Coordinates exposed to the frontend before a match is accepted are **truncated to 2 decimal places** (~1km radius). Precise coordinates are revealed only post-match.
 - PII lives in isolated Firestore collections with strict rules; public profile docs hold only generalized/anonymized fields.
 
+### Free tier guardrails (Firebase Spark)
+- Project `village-77ccb` runs on the free Spark plan. **Do not click "Upgrade to Blaze."**
+- Default `--dart-define=DEMO_MODE=true` runs the entire demo path off `demo_seed.dart` — no Firestore reads.
+- Every Firestore query in the codebase must call `.limit(N)`. See `docs/FIREBASE_LIMITS.md` for full rules.
+- Cloud Functions can't be deployed on Spark — B uses the local emulator (`firebase emulators:start`).
+
 ## Build-vs-hardcode policy
 
 The blueprint deliberately hardcodes anything that doesn't demo well live. Respect these choices unless the user changes scope:

@@ -1,9 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
 import 'theme/app_theme.dart';
 import 'screens/map_screen.dart';
+
+/// When `DEMO_MODE=true` (default), the app runs entirely off `DemoSeed`
+/// in-memory data and never reads from Firestore. This keeps us comfortably
+/// inside the Spark free tier (see docs/FIREBASE_LIMITS.md).
+///
+/// Flip to false only when you specifically need to test the live backend:
+///   flutter run -d chrome --dart-define=DEMO_MODE=false
+const bool kDemoMode = bool.fromEnvironment('DEMO_MODE', defaultValue: true);
 
 /// Entry point.
 /// Firebase is initialized against the `village-77ccb` project using the
@@ -15,6 +24,13 @@ void main() async {
 
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
+  );
+
+  // Aggressive caching + offline persistence — every cached doc is a saved
+  // read against our 50K/day Spark quota. (See docs/FIREBASE_LIMITS.md §5.)
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: 10 * 1024 * 1024, // 10 MB — plenty for this demo
   );
 
   runApp(const VillageApp());
