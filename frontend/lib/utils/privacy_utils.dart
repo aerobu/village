@@ -29,10 +29,11 @@ class PrivacyUtils {
   }
 
   /// Check if a coordinate is properly truncated (2 dp).
-  /// 
+  ///
   /// Useful for testing and validation.
+  /// Uses epsilon comparison for floating point safety.
   static bool isProperlyTruncated(double value) {
     final truncated = truncateCoordinate(value);
-    return value == truncated;
+    return (value - truncated).abs() < 1e-10;
   }
 }

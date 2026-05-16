@@ -1,5 +1,8 @@
 /// Public profile of a volunteer or elder.
 /// Shared between the client and Firestore.
+
+import 'dart:math';
+
 class UserPublic {
   final String id;
   final String name;
