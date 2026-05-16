@@ -12,7 +12,11 @@ Three-way split by **vertical feature slice** so nobody blocks anyone else after
 | **B** | `aerobu` | Request flow + Gale-Shapley matching + the fake-accept timer | Step 3 (the core match flow) |
 | **C** | `bharathkb882` | Profiles, safety badges, Proof-of-Visit & social share  | Steps 2 & 4 (safety primer + the "wow" moment) |
 
-Pick a **merge captain** (recommend A) — they're the only one who merges PRs to `main` during the build, to avoid concurrent-merge surprises.
+**Branching strategy:** Choose one before the build starts:
+- **PR + merge captain model** (below) — safer for async teams, lower merge risk.
+- **Trunk-based direct-to-main** (`TRUNK_DEV.md`) — faster for 3-hour hackathons, requires discipline.
+
+If you pick **PR + merge captain**: Pick a **merge captain** (recommend A) — they're the only one who merges PRs to `main` during the build, to avoid concurrent-merge surprises.
 
 ## File ownership
 
@@ -50,19 +54,23 @@ Touch with a quick heads-up in `#dev` on Discord:
 - `docs/*`
 - `README.md`, `CLAUDE.md`
 
-## Branching
+## Branching (PR + merge captain model)
+
+**Only if you're using the merge captain approach (not trunk-based):**
 
 - `main` — always demo-ready. Only the merge captain pushes here.
 - `feat/A-map`, `feat/B-matching`, `feat/C-safety` — long-lived per-person branches.
 - Short feature sub-branches off your main branch are fine if you want them, but not required for a 3-hour build.
 - Rebase your branch on `main` (`git pull --rebase origin main`) before opening a PR.
 
-## PR etiquette for a 3-hour build
+### PR etiquette for a 3-hour build
 
 - **Title:** `[A|B|C] short description` — makes the queue scannable.
 - **Description:** one sentence + a screenshot/GIF if it's a UI change.
 - **Review:** 60-second eyes-on in Discord voice is enough. Don't gate on full async review.
 - **Required check:** `flutter test` must pass locally before requesting merge.
+
+**→ Using trunk-based workflow instead?** See `TRUNK_DEV.md` for the three rules (rebase, test, announce).
 
 ## Communication norms
 
@@ -74,7 +82,8 @@ Touch with a quick heads-up in `#dev` on Discord:
 ## Pre-flight checklist (before the timer starts)
 
 - [ ] All 3 names filled in above
-- [ ] Merge captain picked
+- [ ] **Branching strategy decided:** PR + merge captain (§ below), or trunk-based direct-to-main (`TRUNK_DEV.md`)?
+- [ ] If PR model: merge captain picked; if trunk-based: everyone has read `TRUNK_DEV.md`
 - [ ] All 3 pass the §4 sanity check in `SETUP.md`
 - [ ] Firebase project created and all 3 have Editor access
 - [ ] Scaffold pushed to `main` and everyone has pulled it
