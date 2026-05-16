@@ -4,8 +4,8 @@ import '../models/user_public.dart';
 /// Hardcoded demo data — 5 volunteers + 1 elder.
 ///
 /// All coordinates are truncated to 2 decimal places (~1 km) per the
-/// privacy invariant in CLAUDE.md. They're clustered around a small
-/// downtown Portland, OR for demo plausibility.
+/// privacy invariant in CLAUDE.md. They're clustered around downtown
+/// Portland, OR for demo plausibility.
 ///
 /// ⚠️ FREE TIER GUARDRAIL: this list must stay in-memory. Do NOT replace it
 /// with a Firestore query — that would burn through the 50K reads/day Spark
@@ -38,7 +38,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Priya S.',
       languages: ['ta', 'en'],        // Tamil match — should rank #1
-      approxLocation: GeoPoint(45.53, -122.69) // NW Portland,
+      approxLocation: GeoPoint(45.53, -122.69), // NW Portland
       rating: 4.9,
       backgroundCheck: true,
       skills: ['groceries', 'companionship'],
@@ -58,7 +58,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Sunita B.',
       languages: ['bn', 'en'],
-      approxLocation: GeoPoint(45.52, -122.70) // West Portland,
+      approxLocation: GeoPoint(45.52, -122.70), // West Portland
       rating: 4.6,
       backgroundCheck: true,
       skills: ['companionship'],
@@ -68,7 +68,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Ravi K.',
       languages: ['ta', 'hi', 'en'],  // also speaks Tamil
-      approxLocation: GeoPoint(45.54, -122.68) // North Portland,
+      approxLocation: GeoPoint(45.54, -122.68), // North Portland
       rating: 4.5,
       backgroundCheck: true,
       skills: ['transport', 'groceries'],
@@ -78,7 +78,7 @@ abstract class DemoSeed {
       role: 'volunteer',
       displayName: 'Ananya P.',
       languages: ['hi', 'bn'],
-      approxLocation: GeoPoint(45.53, -122.66) // NE Portland,
+      approxLocation: GeoPoint(45.53, -122.66), // NE Portland
       rating: 4.4,
       backgroundCheck: false,
       skills: ['companionship'],
