@@ -8,9 +8,9 @@ Three-way split by **vertical feature slice** so nobody blocks anyone else after
 
 | Owner | GitHub handle | Slice | Demo touchpoint (`project.md` §6) |
 |-------|---------------|-------|-----------------------------------|
-| **A** | `aerobu`            | Map & visual shell, app scaffold, hardcoded demo data | Step 3 (the map visual) |
-| **B** | `<teammate-2-handle>` | Request flow + Gale-Shapley matching + the fake-accept timer | Step 3 (the core match flow) |
-| **C** | `<teammate-3-handle>` | Profiles, safety badges, Proof-of-Visit & social share  | Steps 2 & 4 (safety primer + the "wow" moment) |
+| **A** | `arnewiseman` | Map & visual shell, app scaffold, hardcoded demo data | Step 3 (the map visual) |
+| **B** | `aerobu` | Request flow + Gale-Shapley matching + the fake-accept timer | Step 3 (the core match flow) |
+| **C** | `bharathkb882` | Profiles, safety badges, Proof-of-Visit & social share  | Steps 2 & 4 (safety primer + the "wow" moment) |
 
 Pick a **merge captain** (recommend A) — they're the only one who merges PRs to `main` during the build, to avoid concurrent-merge surprises.
 

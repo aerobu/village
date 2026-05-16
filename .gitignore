@@ -3,3 +3,8 @@
 
 # Local Claude Code settings (user-specific)
 .claude/settings.local.json
+
+# Editor swap/backup files
+*.swp
+*.swo
+*~
