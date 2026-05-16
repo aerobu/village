@@ -21,35 +21,35 @@ If you pick **PR + merge captain**: Pick a **merge captain** (recommend A) — t
 ## File ownership
 
 ### A — Map & visual shell
-- `village_app/lib/main.dart`
-- `village_app/lib/screens/map_screen.dart`
-- `village_app/lib/widgets/pulsing_marker.dart`
-- `village_app/lib/data/demo_seed.dart` (hardcoded 5–6 volunteer pins + elder)
-- `village_app/assets/` (map style JSON, stock photos)
+- `frontend/lib/main.dart`
+- `frontend/lib/screens/map_screen.dart`
+- `frontend/lib/widgets/pulsing_marker.dart`
+- `frontend/lib/data/demo_seed.dart` (hardcoded 5–6 volunteer pins + elder)
+- `frontend/assets/` (map style JSON, stock photos)
 - App-wide theming and navigation skeleton
 
 ### B — Request flow + matching engine
-- `village_app/lib/screens/request_form.dart`
-- `village_app/lib/services/matching_service.dart` (client-side fallback)
-- `village_app/lib/services/firestore_service.dart`
-- `village_app/lib/models/` (UserPublic, HelpRequest, MatchDoc — write these FIRST, day-zero)
+- `frontend/lib/screens/request_form.dart`
+- `frontend/lib/services/matching_service.dart` (client-side fallback)
+- `frontend/lib/services/firestore_service.dart`
+- `frontend/lib/models/` (UserPublic, HelpRequest, MatchDoc — write these FIRST, day-zero)
 - `functions/src/matching.ts` (Gale-Shapley Cloud Function)
-- `village_app/test/matching_test.dart` — **TDD #1: language outranks distance**
+- `frontend/test/matching_test.dart` — **TDD #1: language outranks distance**
 
 ### C — Profiles, safety, "wow" moments
-- `village_app/lib/screens/profile_screen.dart`
-- `village_app/lib/screens/proof_of_visit.dart`
-- `village_app/lib/widgets/background_check_badge.dart`
-- `village_app/lib/services/share_service.dart` (Facebook/Instagram share buttons)
+- `frontend/lib/screens/profile_screen.dart`
+- `frontend/lib/screens/proof_of_visit.dart`
+- `frontend/lib/widgets/background_check_badge.dart`
+- `frontend/lib/services/share_service.dart` (Facebook/Instagram share buttons)
 - `firestore.rules` (privacy invariants)
-- `village_app/test/privacy_test.dart` — **TDD #2: pre-match coords truncated to 2 dp**
-- `village_app/test/request_write_test.dart` — **TDD #3: submit writes to `requests`**
+- `frontend/test/privacy_test.dart` — **TDD #2: pre-match coords truncated to 2 dp**
+- `frontend/test/request_write_test.dart` — **TDD #3: submit writes to `requests`**
 
 ## Shared / no-single-owner files
 
 Touch with a quick heads-up in `#dev` on Discord:
 
-- `village_app/pubspec.yaml`
+- `frontend/pubspec.yaml`
 - `firebase.json`, `.firebaserc`, `firestore.indexes.json`
 - `docs/*`
 - `README.md`, `CLAUDE.md`

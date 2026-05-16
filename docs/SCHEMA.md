@@ -63,7 +63,7 @@ Result of the Gale-Shapley pass. Only the two participants can read the correspo
 
 ## Dart model stubs
 
-These should land in `village_app/lib/models/` as soon as the scaffold is in. **Person B owns these** (see `OWNERSHIP.md`) and they block the other two — write them first.
+These should land in `frontend/lib/models/` as soon as the scaffold is in. **Person B owns these** (see `OWNERSHIP.md`) and they block the other two — write them first.
 
 ```dart
 // models/user_public.dart
@@ -145,7 +145,7 @@ service cloud.firestore {
 
 ## Hardcoded demo data
 
-Lives in `village_app/lib/data/demo_seed.dart` (Person A owns this file):
+Lives in `frontend/lib/data/demo_seed.dart` (Person A owns this file):
 
 - **5–6 volunteer `users_public` docs** with varied languages (Tamil, Hindi, Bengali, English) and approx locations spread around a small radius.
 - **1 elder `users_public` doc** for the demo user.
