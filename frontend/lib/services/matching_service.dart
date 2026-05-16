@@ -1,6 +1,6 @@
 /**
  * Client-side matching service.
- * 
+ *
  * Wraps the Cloud Function and provides local fallback matching.
  * Also handles caching and Firestore interactions.
  */
@@ -10,27 +10,60 @@ import '../models/user_public.dart';
 import '../models/help_request.dart';
 import '../models/match_doc.dart';
 
+/// Score result with breakdown of component scores
+class ScoreResult {
+  final double score;
+  final String reason;
+  final double languageScore;
+  final double distanceScore;
+  final double urgencyScore;
+
+  ScoreResult({
+    required this.score,
+    required this.reason,
+    required this.languageScore,
+    required this.distanceScore,
+    required this.urgencyScore,
+  });
+}
+
 class MatchingService {
   static final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Compute match score between a volunteer and a request.
   /// Formula: 0.7 * language + 0.2 * distance + 0.1 * urgency
-  /// 
+  ///
   /// TDD #1: Language outranks distance. This is the critical invariant.
-  static double computeScore(UserPublic volunteer, HelpRequest request) {
+  static ScoreResult computeScore(UserPublic volunteer, HelpRequest request) {
     // Language match: 1.0 if same, 0.0 otherwise
     final languageMatch = volunteer.language == request.language ? 1.0 : 0.0;
 
     // Distance score: 1.0 if <500m, linear decay to 0.0 at 5km
     final distMeters = volunteer.distanceTo(request.latitude, request.longitude);
     const maxDist = 5000.0;
-    final distScore = Math.max(0.0, 1.0 - (distMeters / maxDist));
+    final distScore = (1.0 - (distMeters / maxDist)).clamp(0.0, 1.0);
 
     // Urgency score: 0.0–1.0 based on request urgency (1–5)
     final urgencyScore = request.urgency / 5.0;
 
     // Combined score: language is 70% of weight (highest priority)
-    return 0.7 * languageMatch + 0.2 * distScore + 0.1 * urgencyScore;
+    final combinedScore = 0.7 * languageMatch + 0.2 * distScore + 0.1 * urgencyScore;
+
+    // Create a human-readable reason
+    String reason;
+    if (languageMatch == 1.0) {
+      reason = '${volunteer.language} speaker, ${distMeters.toStringAsFixed(0)}m away';
+    } else {
+      reason = 'Distance ${distMeters.toStringAsFixed(0)}m (language mismatch)';
+    }
+
+    return ScoreResult(
+      score: combinedScore,
+      reason: reason,
+      languageScore: languageMatch,
+      distanceScore: distScore,
+      urgencyScore: urgencyScore,
+    );
   }
 
   /// Perform local matching (fallback if Cloud Function is unavailable).
@@ -57,11 +90,11 @@ class MatchingService {
       for (final volunteer in volunteers) {
         if (usedVolunteers.contains(volunteer.id)) continue;
 
-        final score = computeScore(volunteer, request);
-        if (score > bestScore) {
-          bestScore = score;
+        final scoreResult = computeScore(volunteer, request);
+        if (scoreResult.score > bestScore) {
+          bestScore = scoreResult.score;
           bestVolunteer = volunteer;
-          reason = _scoreReason(volunteer, request, score);
+          reason = scoreResult.reason;
         }
       }
 
@@ -79,22 +112,6 @@ class MatchingService {
     }
 
     return matches;
-  }
-
-  /// Human-readable explanation of a match score.
-  static String _scoreReason(
-    UserPublic volunteer,
-    HelpRequest request,
-    double score,
-  ) {
-    final distMeters = volunteer.distanceTo(request.latitude, request.longitude);
-    final languageMatch = volunteer.language == request.language;
-
-    if (languageMatch) {
-      return '${volunteer.language} speaker, ${distMeters.toStringAsFixed(0)}m away, score ${score.toStringAsFixed(2)}';
-    } else {
-      return 'language mismatch, ${distMeters.toStringAsFixed(0)}m away, score ${score.toStringAsFixed(2)}';
-    }
   }
 
   /// Fetch all matches from Firestore for a given request.

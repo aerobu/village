@@ -29,10 +29,19 @@ class FirestoreServiceTest {
 
   /// Create a new help request.
   static Future<String> createRequest(HelpRequest request) async {
-    final docRef = await firestore
-        .collection('requests')
-        .add(request.toJson());
-    return docRef.id;
+    // If request has an ID, use it; otherwise let Firestore generate one
+    if (request.id.isNotEmpty) {
+      await firestore
+          .collection('requests')
+          .doc(request.id)
+          .set(request.toJson());
+      return request.id;
+    } else {
+      final docRef = await firestore
+          .collection('requests')
+          .add(request.toJson());
+      return docRef.id;
+    }
   }
 
   /// Fetch a request by ID.
@@ -59,9 +68,18 @@ class FirestoreServiceTest {
 
   /// Save a match document.
   static Future<String> saveMatch(MatchDoc match) async {
-    final docRef =
-        await firestore.collection('matches').add(match.toJson());
-    return docRef.id;
+    // If match has an ID, use it; otherwise let Firestore generate one
+    if (match.id.isNotEmpty) {
+      await firestore
+          .collection('matches')
+          .doc(match.id)
+          .set(match.toJson());
+      return match.id;
+    } else {
+      final docRef =
+          await firestore.collection('matches').add(match.toJson());
+      return docRef.id;
+    }
   }
 
   /// Batch save multiple matches.
@@ -106,6 +124,17 @@ class FirestoreServiceTest {
             .map((doc) =>
                 MatchDoc.fromJson(doc.data() as Map<String, dynamic>))
             .toList());
+  }
+
+  /// Update request status.
+  static Future<void> updateRequest(
+    String requestId,
+    Map<String, dynamic> updates,
+  ) async {
+    await firestore
+        .collection('requests')
+        .doc(requestId)
+        .update(updates);
   }
 }
 
