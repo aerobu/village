@@ -38,6 +38,22 @@ void main() async {
   // bug after the rule changes. Web persistence is opt-in via a different
   // API (`enableIndexedDbPersistence`); we don't need it for the demo and
   // it actively hurt us. Leaving Firestore on its web default.
+  //
+  // Defensive: nuke any stale Firestore IndexedDB cache before the SDK
+  // opens it. The web SDK uses IndexedDB internally even without
+  // `persistenceEnabled`, and a corrupted DB (e.g. from a partial
+  // "Clear site data" in DevTools mid-write) leaves the SDK in an
+  // infinite "refusing to open IndexedDB database" retry loop that
+  // blocks the entire app. clearPersistence() must run BEFORE any other
+  // Firestore call, so it's the first thing here.
+  try {
+    await FirebaseFirestore.instance
+        .clearPersistence()
+        .timeout(const Duration(seconds: 3));
+  } catch (e) {
+    // Common: persistence already started, or nothing to clear. Fine.
+    debugPrint('[main] clearPersistence skipped: $e');
+  }
 
   // Anonymous sign-in so B's RequestFormScreen has a non-null currentUser.
   // Awaited (the form needs the uid) but capped at 5s so an unreachable
