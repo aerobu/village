@@ -9,14 +9,14 @@ class ShareService {
   static const _appUrl = 'https://village.app';
 
   static Future<void> shareVisit(UserPublic elder, UserPublic volunteer) async {
-    final text = '🏡 ${volunteer.displayName} just helped ${elder.displayName} '
+    final text = '🏡 ${volunteer.name} just helped ${elder.name} '
         'through Village — connecting communities one moment at a time. $_hashtag\n$_appUrl';
     await Share.share(text, subject: 'A beautiful moment in our Village community');
   }
 
   static Future<void> shareProfile(UserPublic user) async {
-    final text = 'Check out ${user.displayName}\'s profile on Village. '
+    final text = 'Check out ${user.name}\'s profile on Village. '
         'Trusted volunteer connecting our community. $_appUrl';
-    await Share.share(text, subject: '${user.displayName} on Village');
+    await Share.share(text, subject: '${user.name} on Village');
   }
 }

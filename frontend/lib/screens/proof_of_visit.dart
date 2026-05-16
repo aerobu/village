@@ -29,8 +29,8 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    _checkCtrl = AnimationController(vsync: this, duration: const Duration(ms: 600));
-    _cardCtrl = AnimationController(vsync: this, duration: const Duration(ms: 500));
+    _checkCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _cardCtrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
 
     _checkScale = CurvedAnimation(parent: _checkCtrl, curve: Curves.elasticOut);
     _cardSlide = Tween<double>(begin: 60, end: 0)
@@ -50,7 +50,7 @@ class _ProofOfVisitScreenState extends State<ProofOfVisitScreen> with TickerProv
   @override
   Widget build(BuildContext context) {
     // Use local asset for better offline reliability
-    final photoUrl = widget.match.proofPhotoUrl ?? 'assets/images/proof_stub.jpg';
+    final photoUrl = 'assets/images/proof_stub.jpg';
 
     return Scaffold(
       backgroundColor: Theme.of(context).colorScheme.background,

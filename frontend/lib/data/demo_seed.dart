@@ -86,4 +86,10 @@ abstract class DemoSeed {
 
   /// All map pins: elder + volunteers.
   static List<UserPublic> get allPins => [elder, ...volunteers];
+
+  /// Helper: check if a user is the elder (logged-in demo persona)
+  static bool isElder(UserPublic user) => user.id == elder.id;
+
+  /// Helper: check if a user is a volunteer
+  static bool isVolunteer(UserPublic user) => volunteers.any((v) => v.id == user.id);
 }
