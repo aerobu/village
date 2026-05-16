@@ -42,166 +42,293 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => ShareService.shareProfile(user),
           ),
         ],
+        elevation: 0,
+        backgroundColor: Colors.transparent,
       ),
       body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 20),
-            // Avatar
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: Theme.of(context).colorScheme.primary, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
-                    blurRadius: 20,
-                    spreadRadius: 4,
-                  )
-                ],
-              ),
-              child: CircleAvatar(
-                radius: 50,
-                backgroundColor: Theme.of(context).colorScheme.surface,
-                child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: user.photoUrl,
-                    width: 100,
-                    height: 100,
-                    fit: BoxFit.cover,
-                    placeholder: (_, __) => Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                    ),
-                    errorWidget: (_, __, ___) => Text(
-                      user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
-                      style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold),
-                    ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                const SizedBox(height: 20),
+
+                // Main Profile Card
+                Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(maxWidth: 500),
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.surface,
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 2,
+                      )
+                    ],
+                  ),
+                  child: Column(
+                    children: [
+                      // Avatar
+                      Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: Theme.of(context).colorScheme.primary,
+                            width: 3,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                              blurRadius: 20,
+                              spreadRadius: 4,
+                            )
+                          ],
+                        ),
+                        child: CircleAvatar(
+                          radius: 55,
+                          backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+                          child: ClipOval(
+                            child: CachedNetworkImage(
+                              imageUrl: user.photoUrl,
+                              width: 110,
+                              height: 110,
+                              fit: BoxFit.cover,
+                              placeholder: (_, __) => Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                              ),
+                              errorWidget: (_, __, ___) => Text(
+                                user.name.isNotEmpty ? user.name[0].toUpperCase() : '?',
+                                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Name
+                      Text(
+                        user.name,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Role chip
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '🤝 Volunteer',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Background check badge
+                      if (user.backgroundCheckVerified) ...[
+                        const BackgroundCheckBadge(),
+                        const SizedBox(height: 20),
+                      ],
+
+                      // Divider
+                      Divider(
+                        color: Theme.of(context).colorScheme.outlineVariant,
+                        thickness: 1,
+                      ),
+                      const SizedBox(height: 20),
+
+                      // Language Section
+                      _buildInfoSection(
+                        context,
+                        '🌐 Language',
+                        _langLabels[user.language] ?? user.language,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Skills Section
+                      if (user.skills.isNotEmpty)
+                        _buildSkillsSection(context),
+
+                      if (user.skills.isNotEmpty)
+                        const SizedBox(height: 16),
+
+                      // Location Section
+                      _buildLocationSection(context),
+                    ],
                   ),
                 ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(user.name, style: Theme.of(context).textTheme.headlineMedium),
-            const SizedBox(height: 8),
-            // Role chip
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                '🤝 Volunteer',
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: Theme.of(context).colorScheme.primary,
+
+                const SizedBox(height: 24),
+
+                // Report button
+                TextButton.icon(
+                  onPressed: () => _showReportDialog(context),
+                  icon: const Icon(Icons.flag_outlined, size: 16, color: Color(0xFFCF6679)),
+                  label: const Text(
+                    'Report User',
+                    style: TextStyle(color: Color(0xFFCF6679), fontSize: 13),
+                  ),
                 ),
-              ),
+
+                const SizedBox(height: 40),
+              ],
             ),
-            const SizedBox(height: 24),
-            // Background check badge (Person C owns this)
-            if (user.backgroundCheckVerified)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: const BackgroundCheckBadge(),
-              ),
-            const SizedBox(height: 24),
-            // Language
-            _buildSection(
-              context,
-              '🌐 Language',
-              [_langLabels[user.language] ?? user.language],
-            ),
-            const SizedBox(height: 20),
-            // Skills
-            if (user.skills.isNotEmpty)
-              _buildSection(
-                context,
-                '✨ Skills',
-                user.skills
-                    .split(',')
-                    .map((s) => s.trim())
-                    .map((s) => _skillLabels[s] ?? s)
-                    .toList(),
-              ),
-            const SizedBox(height: 24),
-            // Location (masked)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.surface,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('📍 Approximate Location'),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '~0.3 km away (masked for privacy)',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Exact address shared after match accepted',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey.shade600,
-                        fontStyle: FontStyle.italic,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            const SizedBox(height: 40),
-            // Report button
-            TextButton.icon(
-              onPressed: () => _showReportDialog(context),
-              icon: const Icon(Icons.flag_outlined, size: 16, color: Color(0xFFCF6679)),
-              label: const Text(
-                'Report User',
-                style: TextStyle(color: Color(0xFFCF6679)),
-              ),
-            ),
-            const SizedBox(height: 40),
-          ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSection(BuildContext context, String title, List<String> items) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: Theme.of(context).textTheme.bodySmall),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: items
-                .map(
-                  (item) => Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Text(item, style: const TextStyle(fontSize: 13)),
-                  ),
-                )
-                .toList(),
+  Widget _buildInfoSection(BuildContext context, String title, String value) {
+    return Column(
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
           ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Text(
+            value,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSkillsSection(BuildContext context) {
+    final skills = user.skills
+        .split(',')
+        .map((s) => s.trim())
+        .map((s) => _skillLabels[s] ?? s)
+        .toList();
+
+    return Column(
+      children: [
+        Text(
+          '✨ Skills',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 8,
+          runSpacing: 8,
+          children: skills
+              .map(
+                (skill) => Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    skill,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildLocationSection(BuildContext context) {
+    return Column(
+      children: [
+        Text(
+          '📍 Location',
+          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.primary.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Text(
+                'Approximately 0.3 km away',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '(masked for privacy)',
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Exact address shared after match accepted',
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                    fontStyle: FontStyle.italic,
+                    color: Theme.of(context).colorScheme.onSurface.withOpacity(0.6),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
